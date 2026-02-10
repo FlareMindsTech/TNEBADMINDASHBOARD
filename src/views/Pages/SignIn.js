@@ -22,6 +22,8 @@ import axios from "axios";
 
 import { useNavigate } from "react-router-dom";
 
+import { BASE_URL } from "views/utils/axiosInstance";
+
 function AdminLogin() {
   const navigate = useNavigate();
 
@@ -36,13 +38,11 @@ function AdminLogin() {
   const titleColor = useColorModeValue("purple.600", "purple.300");
   const toast = useToast();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/;
 
   // Animations
   const floatAnimation = keyframes`
@@ -61,10 +61,10 @@ function AdminLogin() {
   `;
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!identifier || !password) {
       toast({
         title: "Missing fields",
-        description: "Email and password are required",
+        description: "Identifier and password are required",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -72,35 +72,13 @@ function AdminLogin() {
       return;
     }
 
-    if (!emailRegex.test(email)) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!passwordRegex.test(password)) {
-      toast({
-        title: "Invalid Password",
-        description:
-          "Password must be at least 8 characters, include uppercase, lowercase, and a number",
-        status: "warning",
-        duration: 4000,
-        isClosable: true,
-      });
-      return;
-    }
 
     setLoading(true);
 
     try {
       const res = await axios.post(
-        "https://server-e-fx6s.onrender.com/api/admins/login",
-        { email, password },
+        `${BASE_URL}/users/login`,
+        { identifier, password },
         { headers: { "Content-Type": "application/json" } }
       );
 
@@ -108,7 +86,7 @@ function AdminLogin() {
 
       // ✅ Store token and user info in localStorage     
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify({ name, email, role }));
+      localStorage.setItem("user", JSON.stringify({ name, identifier, role }));
 
       toast({
         title: "Login Successful",
@@ -380,13 +358,13 @@ function AdminLogin() {
                 >
                   <Text fontSize="12px">📧</Text>
                 </Box>
-                Email Address
+                Identifier / Admin ID
               </FormLabel>
               <Input
-                type="email"
-                placeholder="admin@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Enter your ID or Email"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 size={{
                   base: "md",    // 320px-480px
                   sm: "lg",      // 481px-767px

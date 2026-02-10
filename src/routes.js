@@ -12,10 +12,20 @@ import {
   HomeIcon,
   StatsIcon,
   CreditIcon,
+  DocumentIcon,
+  GlobeIcon,
+  RocketIcon,
+
 
 } from "components/Icons/Icons";
 
 import ProductManagement from "views/Dashboard/ProductManagement";
+
+
+import EMinthiran from "views/Dashboard/EMinthiran.js";
+import Carousel from "views/Dashboard/Carousel.js";
+import Events from "views/Dashboard/Events.js";
+
 
 const ICON_COLOR = "#d70f18";
 
@@ -28,22 +38,7 @@ const Logout = () => {
   return <div>Logging out...</div>;
 };
 
-// Get current user role
-const getCurrentUserRole = () => {
-  const userString = localStorage.getItem("user");
-  if (userString) {
-    try {
-      const userData = JSON.parse(userString);
-      return userData.role?.toLowerCase() || 'admin';
-    } catch (error) {
-      return 'admin';
-    }
-  }
-  return 'admin';
-};
 
-const userRole = getCurrentUserRole();
-const isSuperAdmin = userRole === 'super admin' || userRole === 'super admin';
 
 var dashRoutes = [
   // {
@@ -54,15 +49,21 @@ var dashRoutes = [
   //   element: <Dashboard />,
   //   layout: "/admin",
   // },
-  // Show Admin Management only for super admin
-  ...(isSuperAdmin ? [{
+  {
     path: "/admin-management",
-    name: "Create Event",
+    name: "Gallery",
     rtlName: "إدارة المسؤول",
     icon: <StatsIcon color="#d70f18" />,
     element: <AdminManagement />,
     layout: "/admin",
-  }] : []),
+  },
+  {
+    path: "/events",
+    name: "Events",
+    icon: <GlobeIcon color={ICON_COLOR} />,
+    element: <Events />,
+    layout: "/admin",
+  },
   // {
   //   path: "/ProductManagement",
   //   name: "Product Management",
@@ -79,6 +80,22 @@ var dashRoutes = [
   //   element: <UserManagement />,
   //   layout: "/admin",
   // },
+
+
+  {
+    path: "/e-minthiran",
+    name: "E-Minthiran",
+    icon: <DocumentIcon color={ICON_COLOR} />,
+    element: <EMinthiran />,
+    layout: "/admin",
+  },
+  {
+    path: "/carousel",
+    name: "Carousel",
+    icon: <RocketIcon color={ICON_COLOR} />,
+    element: <Carousel />,
+    layout: "/admin",
+  },
   // {
   //   path: "/billing",
   //   name: "Billing",

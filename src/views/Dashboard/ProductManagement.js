@@ -729,22 +729,11 @@ export default function ProductManagement() {
     setViewModalType("");
   };
 
-  // Fetch current user
+  // Fetch current user (REMOVED AUTH CHECK)
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (!storedUser || (storedUser.role !== "admin" && storedUser.role !== "super admin")) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin or super admin can access this page.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      navigate("/auth/signin");
-      return;
-    }
     setCurrentUser(storedUser);
-  }, [navigate, toast]);
+  }, []);
 
   // Fetch categories + products + orders
   const fetchData = useCallback(async () => {

@@ -34,7 +34,7 @@ import {
 import { DeleteIcon, LinkIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 import React, { useState, useEffect } from "react";
 // --- CRITICAL CHANGE: IMPORT THE CUSTOM AXIOS INSTANCE ---
-import axiosInstance from "../utils/axiosInstance"; 
+import axiosInstance from "../utils/axiosInstance";
 // ---------------------------------------------------------
 import { useNavigate } from "react-router-dom";
 
@@ -90,49 +90,17 @@ function AddProductForm() {
   const toast = useToast();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [isAuthChecked, setIsAuthChecked] = useState(false); 
-  
-  // ------------------ ADMIN VALIDATION & TOKEN FETCH ------------------
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  // ------------------ ADMIN VALIDATION (REMOVED) ------------------
   useEffect(() => {
-    const userString = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      toast({
-        title: "Authentication Error 🔒",
-        description: "No authentication token found. Please sign in.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      });
-      navigate("/auth/signin");
-      return;
-    }
-
-    const user = userString ? JSON.parse(userString) : null;
-
-    if (!user || (user.role !== "admin" && user.role !== "super admin")) {
-      toast({
-        title: "Access Denied 🔒",
-        description: "Only admins or super admins can manage products.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      });
-      navigate("/auth/signin");
-      return;
-    }
-
-    setCurrentUser(user);
-    setIsAuthChecked(true); 
-  }, [navigate, toast]);
+    setIsAuthChecked(true);
+  }, []);
 
   // ------------------ FETCH DATA FUNCTIONS ------------------
   const fetchProducts = async () => {
     try {
-      const res = await axiosInstance.get(`/products/all`); 
+      const res = await axiosInstance.get(`/products/all`);
       setProducts(res.data.data || []);
     } catch (err) {
       console.error("Fetch Products Error:", err);
@@ -149,7 +117,7 @@ function AddProductForm() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axiosInstance.get(`/categories/all`); 
+      const res = await axiosInstance.get(`/categories/all`);
       setCategories(res.data.data || []);
     } catch (err) {
       console.error("Fetch Categories Error:", err);
@@ -218,7 +186,7 @@ function AddProductForm() {
         return;
       }
 
-      setProductImages((prev) => [...prev, ...uploadedUrls].slice(0, 5)); 
+      setProductImages((prev) => [...prev, ...uploadedUrls].slice(0, 5));
       toast({ title: "Upload Successful ✅", description: `${uploadedUrls.length} image(s) uploaded.`, status: "success" });
     } catch (err) {
       console.error("Failed to upload images", err.response?.data || err.message);
@@ -229,7 +197,7 @@ function AddProductForm() {
       });
     } finally {
       setIsLoading(false);
-      e.target.value = null; 
+      e.target.value = null;
     }
   };
 
@@ -303,7 +271,7 @@ function AddProductForm() {
       name: name.trim(),
       description: description.trim(),
       category: selectedCategoryId,
-      images: productImages, 
+      images: productImages,
       status: status,
       variants: [
         {
@@ -312,7 +280,7 @@ function AddProductForm() {
           price: Number(price),
           mrp: mrp ? Number(mrp) : 0,
           stock: Number(stock),
-          sku: `${sanitizedName.substring(0, 4)}_${size.toUpperCase()}_${new Date().getTime() % 10000}`, 
+          sku: `${sanitizedName.substring(0, 4)}_${size.toUpperCase()}_${new Date().getTime() % 10000}`,
         },
       ],
     };
@@ -331,7 +299,7 @@ function AddProductForm() {
         );
         toast({ title: "Product Added 🚀", description: `New product "${name}" has been created.`, status: "success" });
       }
-      await fetchProducts(); 
+      await fetchProducts();
     } catch (err) {
       console.error("Failed to submit product", err.response?.data || err.message);
       toast({
@@ -429,7 +397,7 @@ function AddProductForm() {
       await axiosInstance.delete(
         `/products/delete/${productToDelete._id}`
       );
-      await fetchProducts(); 
+      await fetchProducts();
       toast({ title: "Product Deleted 🗑️", description: `Product "${productToDelete.name}" has been removed.`, status: "info" });
     } catch (err) {
       console.error("Failed to delete product", err.response?.data || err.message);
@@ -461,9 +429,9 @@ function AddProductForm() {
         shadow="md"
         direction={{ base: "column", md: "row" }} // Stack on mobile
       >
-        <Text 
+        <Text
           fontSize={{ base: "xl", md: "3xl" }} // Responsive font size
-          fontWeight="extrabold" 
+          fontWeight="extrabold"
           color="#82278A"
           mb={{ base: "3", md: "0" }} // Margin below text on mobile
         >
@@ -689,16 +657,16 @@ function AddProductForm() {
                   {/* Status Dropdown - Added for editing */}
                   {editProductId && (
                     <FormControl isRequired>
-                        <FormLabel>Product Status</FormLabel>
-                        <Select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            size="lg"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="draft">Draft</option>
-                        </Select>
+                      <FormLabel>Product Status</FormLabel>
+                      <Select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        size="lg"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="draft">Draft</option>
+                      </Select>
                     </FormControl>
                   )}
 
@@ -825,14 +793,14 @@ function AddProductForm() {
 
                   {/* Upload via File Input */}
                   <FormControl mb="4">
-                    <FormLabel 
-                      htmlFor="file-upload" 
-                      cursor="pointer" 
-                      border="2px dashed" 
-                      borderColor="gray.400" 
-                      p="4" 
-                      borderRadius="md" 
-                      textAlign="center" 
+                    <FormLabel
+                      htmlFor="file-upload"
+                      cursor="pointer"
+                      border="2px dashed"
+                      borderColor="gray.400"
+                      p="4"
+                      borderRadius="md"
+                      textAlign="center"
                       _hover={{ borderColor: "teal.500" }}
                     >
                       {isLoading ? (
@@ -855,19 +823,19 @@ function AddProductForm() {
                   {/* Upload via URL Input */}
                   <HStack mb="4">
                     <Input
-                        placeholder="Paste image URL here"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        isDisabled={productImages.length >= 5 || isLoading}
+                      placeholder="Paste image URL here"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      isDisabled={productImages.length >= 5 || isLoading}
                     />
-                    <Button 
-                        onClick={handleAddImageUrl} 
-                        colorScheme="teal" 
-                        leftIcon={<LinkIcon />}
-                        isDisabled={productImages.length >= 5 || !newImageUrl.trim() || isLoading}
-                        flexShrink={0}
+                    <Button
+                      onClick={handleAddImageUrl}
+                      colorScheme="teal"
+                      leftIcon={<LinkIcon />}
+                      isDisabled={productImages.length >= 5 || !newImageUrl.trim() || isLoading}
+                      flexShrink={0}
                     >
-                        Add URL
+                      Add URL
                     </Button>
                   </HStack>
                 </Box>

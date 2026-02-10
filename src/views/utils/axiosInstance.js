@@ -1,10 +1,23 @@
+
 //axiosInstance.js
 import axios from "axios";
 
 // --- Configuration ---
-const API_BASE_URL = "https://server-e-fx6s.onrender.com/";
-const BASE_URL = "https://server-e-fx6s.onrender.com/api";
+const API_BASE_URL = "https://tnebserver-u7qr.onrender.com";
+const BASE_URL = "https://tnebserver-u7qr.onrender.com/api";
 const TIMEOUT_MS = 10000;
+
+const getAuthHeaders = (isFormData = false) => {
+  const token = localStorage.getItem("token");
+  const headers = {};
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 // =========================================================
 // 1. GENERAL USER AXIOS INSTANCE
@@ -15,18 +28,6 @@ const axiosInstance = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 // =========================================================
 // 2️⃣ ADMIN / SUPER ADMIN AXIOS INSTANCE
 // =========================================================
@@ -36,32 +37,12 @@ const adminAxiosInstance = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-adminAxiosInstance.interceptors.request.use(
-  (config) => {
-    const adminToken =
-      localStorage.getItem("adminToken") ||
-      sessionStorage.getItem("adminToken");
-    if (adminToken) {
-      config.headers.Authorization = `Bearer ${adminToken}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 // =========================================================
 // 3️⃣ COMMON RESPONSE INTERCEPTOR (401 Unauthorized handler)
 // =========================================================
 const unauthorizedResponseHandler = (error) => {
   if (error.response && error.response.status === 401) {
-    console.warn("⚠️ Unauthorized (401). Clearing auth data...");
-
-    // Clear both localStorage & sessionStorage tokens
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // Optional redirect
-    // window.location.href = "/#/auth/signin";
+    console.warn("⚠️ Unauthorized (401).");
   }
   return Promise.reject(error);
 };
@@ -80,25 +61,284 @@ adminAxiosInstance.interceptors.response.use(
 // 4. EXPORTS
 // =========================================================
 export default axiosInstance;
-export { adminAxiosInstance };
-
-// =========================================================
-// 5. Helper function to get token (checks both storages)
-// =========================================================
-const getToken = () =>
-  localStorage.getItem("token") || sessionStorage.getItem("token");
+export { adminAxiosInstance, BASE_URL };
 
 // =========================================================
 // 6. API CALL FUNCTIONS
 // =========================================================
 
+// ----- Events APIs -----
+export const getAllEvents = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/events`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    throw error;
+  }
+};
+
+export const createEvent = async (eventData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/events`, {
+      method: "POST",
+      headers: getAuthHeaders(true),
+      body: eventData, // Expecting FormData for file upload
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating event:", error);
+    throw error;
+  }
+};
+
+export const updateEvent = async (eventId, eventData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/events/${eventId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: eventData, // Expecting FormData
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating event:", error);
+    throw error;
+  }
+};
+
+export const deleteEvent = async (eventId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/events/${eventId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    throw error;
+  }
+};
+
+// ----- Carousel APIs -----
+export const getCarousel = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/carousel`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching carousel:", error);
+    throw error;
+  }
+};
+
+export const createCarouselImage = async (carouselData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/carousel`, {
+      method: "POST",
+      headers: getAuthHeaders(true),
+      body: carouselData, // Expecting FormData
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating carousel image:", error);
+    throw error;
+  }
+};
+
+export const updateCarousel = async (id, carouselData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/carousel/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: carouselData, // Expecting FormData
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating carousel:", error);
+    throw error;
+  }
+};
+
+export const deleteCarousel = async (id) => {
+  try {
+    const response = await fetch(`${BASE_URL}/carousel/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting carousel:", error);
+    throw error;
+  }
+};
+
+// ----- E-Minthiran APIs -----
+export const getAllMinthiran = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/minthiran`, {
+      method: "GET",
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching magazines:", error);
+    throw error;
+  }
+};
+
+export const createMinthiran = async (formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/minthiran`, {
+      method: "POST",
+      body: formData, // Expecting FormData
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating magazine:", error);
+    throw error;
+  }
+};
+
+export const updateMinthiran = async (id, formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
+      method: "PUT",
+      body: formData, // Expecting FormData
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating magazine:", error);
+    throw error;
+  }
+};
+
+export const deleteMinthiran = async (id) => {
+  try {
+    const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting magazine:", error);
+    throw error;
+  }
+};
+
+// ----- Gallery APIs -----
+export const getAllGalleries = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching galleries:", error);
+    throw error;
+  }
+};
+
+export const createGallery = async (formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery`, {
+      method: "POST",
+      headers: getAuthHeaders(true),
+      body: formData, // Expecting FormData
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Error: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating gallery:", error);
+    throw error;
+  }
+};
+
+export const updateGallery = async (id, formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: formData, // Expecting FormData
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Error: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating gallery:", error);
+    throw error;
+  }
+};
+
+export const deleteGallery = async (id) => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting gallery:", error);
+    throw error;
+  }
+};
+
+export const getGalleryById = async (id) => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching gallery by ID:", error);
+    throw error;
+  }
+};
+
+export const deleteGalleryImage = async (galleryId, imageId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/gallery/${galleryId}/image/${imageId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting gallery image:", error);
+    throw error;
+  }
+};
+
 // ----- Admin APIs -----
 export const getAllAdmins = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/admins/all`, {
       method: "GET",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -110,10 +350,9 @@ export const getAllAdmins = async () => {
 
 export const createAdmin = async (adminData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/admins/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(adminData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -126,10 +365,9 @@ export const createAdmin = async (adminData) => {
 
 export const updateAdmin = async (adminId, updatedData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/admins/update/${adminId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updatedData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -142,20 +380,12 @@ export const updateAdmin = async (adminId, updatedData) => {
 
 export const inActiveAdmin = async (adminId) => {
   try {
-    const token = getToken();
-
     const response = await fetch(`${BASE_URL}/admins/delete/${adminId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
     });
-
     if (!response.ok) throw new Error(`Error: ${response.status}`);
-
-    return await response.json();   // Example: { message: "Admin marked as Inactive successfully" }
-
+    return await response.json();
   } catch (error) {
     console.error("Error deleting admin:", error);
     throw error;
@@ -166,10 +396,9 @@ export const inActiveAdmin = async (adminId) => {
 // ----- Category APIs -----
 export const getAllCategories = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/categories/all`, {
       method: "GET",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -181,10 +410,9 @@ export const getAllCategories = async () => {
 
 export const createCategories = async (categoryData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/categories/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(categoryData),
     });
     if (!response.ok) {
@@ -200,10 +428,9 @@ export const createCategories = async (categoryData) => {
 
 export const updateCategories = async (categoryId, updatedData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/categories/update/${categoryId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updatedData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -217,14 +444,11 @@ export const updateCategories = async (categoryId, updatedData) => {
 
 export const deleteCategory = async (categoryId) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/categories/delete/${categoryId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
-
     if (!response.ok) throw new Error(`Error: ${response.status}`);
-
     return await response.json();
   } catch (error) {
     console.error("Error deleting category:", error);
@@ -236,10 +460,9 @@ export const deleteCategory = async (categoryId) => {
 // ----- Product APIs -----
 export const getAllProducts = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/products/all`, {
       method: "GET",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -251,38 +474,23 @@ export const getAllProducts = async () => {
 
 export const createProducts = async (productData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/products/create`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "token": token
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(productData),
     });
-
-    console.log("Response status:", response.status);
-
     if (!response.ok) {
-
       let errorMessage = `Error: ${response.status}`;
-
       try {
         const errorData = await response.json();
-
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch (e) {
-
         const text = await response.text();
-
         errorMessage = text || errorMessage;
       }
-
       throw new Error(errorMessage);
     }
-
     const data = await response.json();
-
     return data;
   } catch (error) {
     throw error;
@@ -291,22 +499,18 @@ export const createProducts = async (productData) => {
 
 export const uploadImage = async (file) => {
   try {
-    const token = getToken();
     const formData = new FormData();
     formData.append("file", file);
-
     const res = await fetch(`${BASE_URL}/products/upload`, {
       method: "POST",
-      headers: { token },
+      headers: getAuthHeaders(true),
       body: formData,
     });
-
     if (!res.ok) {
       const text = await res.text();
       console.error("Error uploading image, backend response:", text);
       throw new Error("Image upload failed");
     }
-
     const data = await res.json();
     return data.url;
   } catch (error) {
@@ -317,10 +521,9 @@ export const uploadImage = async (file) => {
 
 export const updateProducts = async (productId, updatedData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/products/update/${productId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updatedData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -333,10 +536,9 @@ export const updateProducts = async (productId, updatedData) => {
 
 export const deleteProducts = async (productId) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/products/delete/${productId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -349,10 +551,9 @@ export const deleteProducts = async (productId) => {
 // ----- User APIs -----
 export const getAllUsers = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/users/all`, {
       method: "GET",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -364,10 +565,9 @@ export const getAllUsers = async () => {
 
 export const createUser = async (userData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/users/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(userData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -380,10 +580,9 @@ export const createUser = async (userData) => {
 
 export const updateUser = async (userId, updatedData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/users/update/${userId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updatedData),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -396,15 +595,10 @@ export const updateUser = async (userId, updatedData) => {
 
 export const deleteUser = async (userId) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/users/delete/${userId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
     });
-
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -416,10 +610,9 @@ export const deleteUser = async (userId) => {
 
 export const getAllOrders = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/orders/all`, {
       method: "GET",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -431,10 +624,9 @@ export const getAllOrders = async () => {
 
 export const createOrders = async (categoryData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/Orders/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", token },
+      headers: getAuthHeaders(),
       body: JSON.stringify(categoryData),
     });
     if (!response.ok) {
@@ -450,28 +642,20 @@ export const createOrders = async (categoryData) => {
 
 export const updateOrders = async (orderId, updatedData) => {
   try {
-    const token = getToken();
-
     const response = await fetch(`${BASE_URL}/orders/update/${orderId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updatedData),
     });
-
     if (!response.ok) {
       let errorMessage = `Error updating order: ${response.status}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch (e) {
-        // Fallback if not JSON
       }
       throw new Error(errorMessage);
     }
-
     return await response.json();
   } catch (error) {
     console.error("Error updating order:", error);
@@ -480,33 +664,22 @@ export const updateOrders = async (orderId, updatedData) => {
 };
 
 
-// Upload Product image
-
-// Add this function to your existing axiosInstance.js file, after the existing uploadImage function
-
 // Upload Product Image with productId
 export const uploadProductImage = async (productId, file) => {
   try {
-    const token = getToken();
     const formData = new FormData();
     formData.append("file", file);
     formData.append("productId", productId);
-
     const res = await fetch(`${BASE_URL}/products/upload`, {
       method: "POST",
-      headers: {
-        token: `${token}`,
-        // Don't set Content-Type for FormData, let browser set it
-      },
+      headers: getAuthHeaders(true),
       body: formData,
     });
-
     if (!res.ok) {
       const errorText = await res.text();
       console.error("Upload failed response:", errorText);
       throw new Error(`Image upload failed: ${res.status} ${res.statusText}`);
     }
-
     return await res.json();
   } catch (error) {
     console.error("Error uploading image:", error);
@@ -517,16 +690,11 @@ export const uploadProductImage = async (productId, file) => {
 // Delete Product Image
 export const deleteProductImage = async (productId, public_id) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/products/delete-image`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        token: `${token}`,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ productId, public_id }),
     });
-
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -537,24 +705,17 @@ export const deleteProductImage = async (productId, public_id) => {
 
 
 // offer details api 
-
 export const createOffer = async (offerData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/offers/create`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(offerData),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `Error: ${response.status}`);
     }
-
     return await response.json();
   } catch (error) {
     console.error("Error creating offer:", error);
@@ -564,43 +725,32 @@ export const createOffer = async (offerData) => {
 
 export const getAllOffers = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/offers/all`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `Error: ${response.status}`);
     }
-
     return await response.json();
   } catch (error) {
     console.error("Error fetching offers:", error);
     throw error;
   }
 };
+
 export const updateOffer = async (offerId, offerData) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/offers/update/${offerId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(offerData),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `Error: ${response.status}`);
     }
-
     return await response.json();
   } catch (error) {
     console.error("Error updating offer:", error);
@@ -610,20 +760,14 @@ export const updateOffer = async (offerId, offerData) => {
 
 export const deleteOffer = async (offerId) => {
   try {
-    const token = getToken();
     const response = await fetch(`${BASE_URL}/offers/delete/${offerId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        token,
-      },
+      headers: getAuthHeaders(),
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `Error: ${response.status}`);
     }
-
     return await response.json();
   } catch (error) {
     console.error("Error deleting offer:", error);

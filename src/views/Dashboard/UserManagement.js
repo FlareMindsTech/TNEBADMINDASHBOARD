@@ -149,24 +149,11 @@ function UserManagement() {
     setShowConfirmPassword(false); // Reset confirm password visibility
   };
 
-  // Fetch current user from localStorage
+  // Fetch current user from localStorage (REMOVED AUTH CHECK)
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (
-      !storedUser ||
-      (storedUser.role !== "admin" && storedUser.role !== "super admin")
-    ) {
-      toast({
-        title: "Access Denied",
-        description: "Only admin or super admin users can access this page.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
     setCurrentUser(storedUser);
-  }, [toast]);
+  }, []);
 
   // Fetch users from backend
   useEffect(() => {

@@ -26,15 +26,11 @@ export default function Dashboard(props) {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/auth/signin");
-    }
-  }, [navigate]);
+    // Authentication check removed as per request
+  }, []);
 
   const { ...rest } = props;
   const [fixed, setFixed] = useState(false);
-  const [userRole, setUserRole] = useState(null);
   const { colorMode } = useColorMode();
 
   // Separate drawer states to prevent conflicts
@@ -43,61 +39,9 @@ export default function Dashboard(props) {
 
   document.documentElement.dir = "ltr";
 
-  // Get user role from localStorage on component mount
-  useEffect(() => {
-    const userString = localStorage.getItem("user");
-    if (userString) {
-      try {
-        const userData = JSON.parse(userString);
-        setUserRole(userData.role?.toLowerCase() || 'admin');
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        setUserRole('admin');
-      }
-    }
-  }, []);
-
   // Filter routes based on user role
   const getFilteredRoutes = (routes) => {
-    if (!userRole) return routes;
-
-    return routes.filter(route => {
-      // If route has collapse/views, filter its children
-      if (route.collapse) {
-        const filteredViews = getFilteredRoutes(route.views || []);
-        return filteredViews.length > 0;
-      }
-
-      // Skip auth routes
-      if (route.layout === "/auth") return false;
-
-      // Define which routes are restricted to super admin only
-      const superAdminOnlyRoutes = [
-        "Admin Management",
-        "admin-management"
-      ];
-
-      // Check if current route is restricted to super admin only
-      const isSuperAdminOnly = superAdminOnlyRoutes.some(restrictedRoute =>
-        route.name?.toLowerCase().includes(restrictedRoute.toLowerCase()) ||
-        route.path?.toLowerCase().includes(restrictedRoute.toLowerCase())
-      );
-
-      if (isSuperAdminOnly) {
-        return userRole === "super admin" || userRole === "superadmin";
-      }
-
-      // Allow access to other admin routes for both roles
-      return route.layout === "/admin";
-    }).map(route => {
-      if (route.collapse) {
-        return {
-          ...route,
-          views: getFilteredRoutes(route.views || [])
-        };
-      }
-      return route;
-    });
+    return routes.filter(route => route.layout === "/admin");
   };
 
   // ✅ Only include routes with layout "/admin" — skip auth routes
