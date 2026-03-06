@@ -25,6 +25,13 @@ import {
     Text,
     Badge,
     Spinner,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -37,7 +44,11 @@ import {
     FaEdit,
     FaCalendarAlt,
     FaFilePdf,
-    FaDownload
+    FaFileImage,
+    FaDownload,
+    FaChevronLeft,
+    FaChevronRight,
+    FaExclamationTriangle
 } from "react-icons/fa";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 import {
@@ -49,14 +60,41 @@ import {
 
 function Events() {
     const textColor = useColorModeValue("gray.700", "white");
-    const customColor = "#d70f18";
-    const customHoverColor = "#b00c14";
+    const customColor = "#0A3D91";
+    const customHoverColor = "#1E88E5";
     const toast = useToast();
 
     const [currentView, setCurrentView] = useState("list");
     const [loading, setLoading] = useState(false);
     const [events, setEvents] = useState([]);
     const [editingEvent, setEditingEvent] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5);
+
+    // Delete modal states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Calculate pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentEvents = events.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(events.length / itemsPerPage);
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
     const [formData, setFormData] = useState({
         title: "",
@@ -158,14 +196,26 @@ function Events() {
         }
     };
 
-    const handleDeleteEvent = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this event?")) return;
+    // Delete modal functions
+    const openDeleteModal = (id) => {
+        setDeleteTarget(id);
+        setIsDeleteModalOpen(true);
+    };
 
-        setLoading(true);
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return;
+
+        setIsDeleting(true);
         try {
-            await deleteEvent(id);
-            toast({ title: "Event deleted", status: "success", duration: 2000 });
+            await deleteEvent(deleteTarget);
+            toast({ title: "Event deleted successfully", status: "success", duration: 2000 });
             fetchEvents();
+            closeDeleteModal();
         } catch (error) {
             toast({
                 title: "Delete failed",
@@ -174,7 +224,7 @@ function Events() {
                 duration: 3000,
             });
         } finally {
-            setLoading(false);
+            setIsDeleting(false);
         }
     };
 
@@ -208,9 +258,9 @@ function Events() {
                                     <Input name="date" type="date" value={formData.date} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor }} />
                                 </FormControl>
                                 <FormControl isRequired={currentView === "add"}>
-                                    <FormLabel color="gray.700">Event PDF</FormLabel>
+                                    <FormLabel color="gray.700">Event File (PDF/Image)</FormLabel>
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
-                                        <Input type="file" name="pdf" accept=".pdf" pt={1} variant="unstyled" onChange={handleInputChange} />
+                                        <Input type="file" name="pdf" accept=".pdf,image/*" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
                                     {currentView === "edit" && editingEvent?.pdf && (
                                         <Text fontSize="xs" mt={2} color="gray.500">Current file exists. Upload new to replace.</Text>
@@ -264,6 +314,7 @@ function Events() {
                         <Table variant="simple" color={textColor}>
                             <Thead>
                                 <Tr my=".8rem" pl="0px" color="gray.400">
+                                    <Th color="gray.400">S.No</Th>
                                     <Th color="gray.400">Title</Th>
                                     <Th color="gray.400">Description</Th>
                                     <Th color="gray.400">Date</Th>
@@ -271,34 +322,176 @@ function Events() {
                                 </Tr>
                             </Thead>
                             <Tbody>
-                                {events.map((event) => (
+                                {currentEvents.map((event, index) => (
                                     <Tr key={event._id || event.id}>
+                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
                                         <Td><Text fontSize="md" color={textColor} fontWeight="bold">{event.title}</Text></Td>
                                         <Td><Text fontSize="md" color={textColor}>{event.description}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor}>{event.date ? event.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
+                                        <Td><Text fontSize="md" color={textColor} whiteSpace="nowrap">{event.date ? event.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
                                         <Td textAlign="center">
                                             <Flex justify="center">
                                                 {event.pdf && (
                                                     <Button as="a" href={event.pdf} target="_blank" variant="ghost" colorScheme="orange" mr={2}>
-                                                        <Icon as={FaFilePdf} />
+                                                        <Icon as={event.pdf.toLowerCase().endsWith('.pdf') ? FaFilePdf : FaFileImage} />
                                                     </Button>
                                                 )}
                                                 <Button variant="ghost" colorScheme="blue" mr={2} onClick={() => handleEditEvent(event)}><Icon as={FaEdit} /></Button>
-                                                <Button variant="ghost" colorScheme="red" onClick={() => handleDeleteEvent(event._id || event.id)}><Icon as={FaTrash} /></Button>
+                                                <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(event._id || event.id)}><Icon as={FaTrash} /></Button>
                                             </Flex>
                                         </Td>
                                     </Tr>
                                 ))}
                                 {events.length === 0 && (
                                     <Tr>
-                                        <Td colSpan={4} textAlign="center" py={4}>No events found.</Td>
+                                        <Td colSpan={5} textAlign="center" py={4}>No events found.</Td>
                                     </Tr>
                                 )}
                             </Tbody>
                         </Table>
                     )}
+                    {/* Pagination Controls */}
+                    {events.length > 0 && (
+                        <Box
+                            flexShrink={0}
+                            p="16px"
+                            borderTop="1px solid"
+                            borderColor={`${customColor}20`}
+                            bg="transparent"
+                        >
+                            <Flex
+                                justify="flex-end"
+                                align="center"
+                                gap={3}
+                            >
+                                {/* Page Info */}
+                                <Text fontSize="sm" color="gray.600" display={{ base: "none", sm: "block" }}>
+                                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, events.length)} of {events.length} events
+                                </Text>
+
+                                {/* Pagination Controls */}
+                                <Flex align="center" gap={2}>
+                                    <Button
+                                        size="sm"
+                                        onClick={handlePrevPage}
+                                        isDisabled={currentPage === 1}
+                                        leftIcon={<FaChevronLeft />}
+                                        bg="white"
+                                        color={customColor}
+                                        border="1px"
+                                        borderColor={customColor}
+                                        _hover={{ bg: customColor, color: "white" }}
+                                        _disabled={{
+                                            opacity: 0.5,
+                                            cursor: "not-allowed",
+                                            bg: "gray.100",
+                                            color: "gray.400",
+                                            borderColor: "gray.300"
+                                        }}
+                                    >
+                                        <Text display={{ base: "none", sm: "block" }}>Previous</Text>
+                                    </Button>
+
+                                    {/* Page Number Display */}
+                                    <Flex
+                                        align="center"
+                                        gap={2}
+                                        bg={`${customColor}10`}
+                                        px={3}
+                                        py={1}
+                                        borderRadius="6px"
+                                        minW="80px"
+                                        justify="center"
+                                    >
+                                        <Text fontSize="sm" fontWeight="bold" color={customColor}>
+                                            {currentPage}
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.500">
+                                            /
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                                            {totalPages}
+                                        </Text>
+                                    </Flex>
+
+                                    <Button
+                                        size="sm"
+                                        onClick={handleNextPage}
+                                        isDisabled={currentPage === totalPages}
+                                        rightIcon={<FaChevronRight />}
+                                        bg="white"
+                                        color={customColor}
+                                        border="1px"
+                                        borderColor={customColor}
+                                        _hover={{ bg: customColor, color: "white" }}
+                                        _disabled={{
+                                            opacity: 0.5,
+                                            cursor: "not-allowed",
+                                            bg: "gray.100",
+                                            color: "gray.400",
+                                            borderColor: "gray.300"
+                                        }}
+                                    >
+                                        <Text display={{ base: "none", sm: "block" }}>Next</Text>
+                                    </Button>
+                                </Flex>
+                            </Flex>
+                        </Box>
+                    )}
                 </CardBody>
             </Card>
+
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal} isCentered>
+                <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+                <ModalContent borderRadius="xl" mx={4}>
+                    <ModalHeader pb={2}>
+                        <Flex align="center" gap={3}>
+                            <Flex
+                                alignItems="center"
+                                justifyContent="center"
+                                borderRadius="full"
+                                bg="red.50"
+                                color="red.500"
+                                h="40px"
+                                w="40px"
+                            >
+                                <Icon as={FaExclamationTriangle} w="18px" h="18px" />
+                            </Flex>
+                            <Text fontSize="lg" fontWeight="bold" color="gray.700">
+                                Confirm Delete
+                            </Text>
+                        </Flex>
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Text color="gray.600">
+                            Are you sure you want to delete this event? This action cannot be undone.
+                        </Text>
+                    </ModalBody>
+                    <ModalFooter gap={3}>
+                        <Button
+                            variant="outline"
+                            onClick={closeDeleteModal}
+                            borderColor="gray.300"
+                            color="gray.600"
+                            _hover={{ bg: "gray.50" }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            bg={customColor}
+                            color="white"
+                            _hover={{ bg: customHoverColor }}
+                            onClick={handleConfirmDelete}
+                            isLoading={isDeleting}
+                            loadingText="Deleting..."
+                            leftIcon={<Icon as={FaTrash} />}
+                        >
+                            Delete
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </Flex>
     );
 }

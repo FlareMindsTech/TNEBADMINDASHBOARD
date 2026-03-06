@@ -44,14 +44,18 @@ function Sidebar(props) {
   const mainPanel = React.useRef();
   const variantChange = "0.2s linear";
 
-  const activeBg = useColorModeValue("#d70f18", "#d70f18"); // Red background when active
+  const activeBg = useColorModeValue("linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)", "linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)"); // Blue gradient background when active
   const inactiveBg = useColorModeValue("white", "navy.700");
   const activeColor = useColorModeValue("white", "white"); // White text when active
-  const inactiveColor = useColorModeValue("gray.400", "gray.400");
-  const sidebarActiveShadow = "0px 7px 11px rgba(0, 0, 0, 0.04)";
-  const sidebarBg = useColorModeValue("white", "navy.800");
-  const sidebarRadius = "20px";
+  const inactiveColor = useColorModeValue("gray.400", "gray.500");
+  const sidebarActiveShadow = "0px 10px 20px rgba(30, 136, 229, 0.2)";
+  const sidebarBg = useColorModeValue(
+    "rgba(255, 255, 255, 0.8)",
+    "rgba(17, 25, 40, 0.7)"
+  );
+  const sidebarRadius = "24px";
   const sidebarMargins = "0px";
+  const sidebarBlur = "15px";
 
   // Desktop logout / signin dialog state
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -247,7 +251,7 @@ function Sidebar(props) {
               <Flex>
                 <IconBox
                   bg={isActive ? "white" : inactiveBg} // White background when active
-                  color={isActive ? "#d70f18" : "blue.500"} // Red icon when active, blue when inactive
+                  color={isActive ? "#0A3D91" : "blue.500"} // Dark blue icon when active, blue when inactive
                   h={{
                     base: "24px",  // 320px - 480px
                     sm: "26px",    // 481px - 767px
@@ -307,7 +311,12 @@ function Sidebar(props) {
       lg: "12px",    // 1025px - 1280px
       xl: "12px"     // 1281px +
     }}>
-      {logo}
+      <Flex align="center" justify="center" direction="column">
+        {logo}
+        <Flex align="center" mt={2} color="#42A5F5">
+          <Text fontSize="xs" fontWeight="bold" letterSpacing="1px" textTransform="uppercase"> TNEBEA</Text>
+        </Flex>
+      </Flex>
       <HSeparator my={{
         base: "20px", // 320px - 480px
         sm: "22px",   // 481px - 767px
@@ -385,7 +394,10 @@ function Sidebar(props) {
             xl: "20px"     // 1281px +
           }}
           m={sidebarMargins}
-          filter="drop-shadow(1px 5px 14px rgba(0, 0, 0, 0.05))"
+          backdropFilter={`blur(${sidebarBlur})`}
+          border="1px solid"
+          borderColor={useColorModeValue("rgba(255,255,255,0.4)", "rgba(255,255,255,0.1)")}
+          filter="drop-shadow(0px 10px 30px rgba(0, 0, 0, 0.05))"
           borderRadius={sidebarRadius}
           display="flex"
           flexDirection="column"
@@ -426,7 +438,7 @@ function Sidebar(props) {
                   boxSize={{ base: "20px", sm: "18px", md: "20px", lg: "20px" }}
                   objectFit="contain"
                 />
-                <strong>FlareMinds</strong> ❤️
+                <strong>FlareMinds</strong>
               </Text>
             </Flex>
           </Box>
@@ -438,7 +450,7 @@ function Sidebar(props) {
       <AlertDialog isOpen={isSigninPromptOpen} leastDestructiveRef={signinCancelRef} onClose={closeSigninPrompt} isCentered>
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="#d70f18">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="#0A3D91">
               Not signed in
             </AlertDialogHeader>
             <AlertDialogBody>
@@ -456,7 +468,7 @@ function Sidebar(props) {
       <AlertDialog isOpen={isLogoutOpen} leastDestructiveRef={logoutCancelRef} onClose={closeLogout} isCentered>
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="#d70f18">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" color="#0A3D91">
               Confirm Logout
             </AlertDialogHeader>
             <AlertDialogBody>Are you sure you want to log out?</AlertDialogBody>
@@ -521,7 +533,7 @@ export function SidebarResponsive(props) {
     window.location.replace(`${base}#/auth/signin`);
   };
 
-  const activeBg = useColorModeValue("#d70f18", "#d70f18"); // Red background when active
+  const activeBg = useColorModeValue("linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)", "linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)"); // Blue gradient background when active
   const inactiveBg = useColorModeValue("white", "navy.700");
   const activeColor = useColorModeValue("white", "white"); // White text when active
   const inactiveColor = useColorModeValue("gray.400", "white");
@@ -664,7 +676,7 @@ export function SidebarResponsive(props) {
               <Flex>
                 <IconBox
                   bg={isActive ? "white" : inactiveBg} // White background when active
-                  color={isActive ? "#d70f18" : "blue.500"} // Red icon when active, blue when inactive
+                  color={isActive ? "#0A3D91" : "blue.500"} // Dark blue icon when active, blue when inactive
                   h={{
                     base: "24px",  // 320px - 480px
                     sm: "26px",    // 481px - 767px
@@ -870,7 +882,7 @@ export function SidebarResponsive(props) {
                       boxSize={{ base: "20px", sm: "20px", md: "22px" }}
                       objectFit="contain"
                     />
-                    <strong>FlareMinds</strong> ❤️
+                    <strong>FlareMinds</strong>
                   </Text>
                 </Flex>
               </Box>

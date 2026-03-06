@@ -47,8 +47,8 @@ import {
 
 function EMinthiran() {
     const textColor = useColorModeValue("gray.700", "white");
-    const customColor = "#d70f18";
-    const customHoverColor = "#b00c14";
+    const customColor = "#0A3D91";
+    const customHoverColor = "#1E88E5";
     const toast = useToast();
 
     const [currentView, setCurrentView] = useState("list");

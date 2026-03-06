@@ -95,8 +95,8 @@ export default function ProductManagement() {
   const navigate = useNavigate();
 
   // Custom color theme
-  const customColor = "#d70f18";
-  const customHoverColor = "#b00c14";
+  const customColor = "#0A3D91";
+  const customHoverColor = "#1E88E5";
 
   const [currentUser, setCurrentUser] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -3786,12 +3786,12 @@ export default function ProductManagement() {
                     <VStack align="stretch" spacing={4} maxH="350px" overflowY="auto" pr={2} css={{
                       '&::-webkit-scrollbar': { width: '4px' },
                       '&::-webkit-scrollbar-track': { background: '#f1f1f1' },
-                      '&::-webkit-scrollbar-thumb': { background: '#d70f18', borderRadius: '10px' },
+                      '&::-webkit-scrollbar-thumb': { background: '#0A3D91', borderRadius: '10px' },
                     }}>
                       {products
                         .filter(p => p.category?._id === (viewOffer.category?._id || viewOffer.category) || p.category === (viewOffer.category?._id || viewOffer.category))
                         .map((product, pIdx) => (
-                          <Box key={pIdx} p={4} borderRadius="lg" border="1px" borderColor="gray.100" bg="gray.50" _hover={{ shadow: "sm", bg: "white", borderColor: '#d70f18' }} transition="all 0.2s">
+                          <Box key={pIdx} p={4} borderRadius="lg" border="1px" borderColor="gray.100" bg="gray.50" _hover={{ shadow: "sm", bg: "white", borderColor: '#0A3D91' }} transition="all 0.2s">
                             <Flex align="center" gap={3} mb={3}>
                               <Image
                                 src={product.images?.[0]?.url || product.images?.[0] || "/placeholder.png"}

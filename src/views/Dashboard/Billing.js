@@ -151,8 +151,8 @@ const exportToCSV = (filename, rows) => {
 };
 
 /** Constants **/
-const DEFAULT_CUSTOM_COLOR = "#d70f18";
-const DEFAULT_CUSTOM_HOVER = "#b00c14";
+const DEFAULT_CUSTOM_COLOR = "#0A3D91";
+const DEFAULT_CUSTOM_HOVER = "#1E88E5";
 
 const STATUS_COLORS = {
   delivered: { bg: "#10B981", color: "white" },
@@ -779,8 +779,8 @@ export default function CleanedBilling() {
     const orderId = safeGet(selectedOrder, "_id", "—");
     const orderDate = new Date(safeGet(selectedOrder, "createdAt", Date.now())).toLocaleDateString();
 
-    // Brand Color: #d70f18 (RGB: 215, 15, 24)
-    const primaryColor = [215, 15, 24];
+    // Brand Color: #0A3D91 (RGB: 215, 15, 24)
+    const primaryColor = [10, 61, 145];
 
     // Header - Title and PKG Number
     doc.setFontSize(26);
@@ -920,7 +920,7 @@ export default function CleanedBilling() {
       const doc = new jsPDF();
       const orderId = safeGet(order, "_id", "—");
       const orderDate = new Date(safeGet(order, "createdAt", Date.now())).toLocaleString();
-      const primaryColor = [215, 15, 24]; // #d70f18
+      const primaryColor = [10, 61, 145]; // #0A3D91
 
       // Header
       doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
