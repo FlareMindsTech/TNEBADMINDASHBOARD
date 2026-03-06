@@ -84,7 +84,7 @@ var dashRoutes = [
 
   {
     path: "/e-minthiran",
-    name: "E-Minthiran",
+    name: "e-Minthiran",
     icon: <DocumentIcon color={ICON_COLOR} />,
     element: <EMinthiran />,
     layout: "/admin",
