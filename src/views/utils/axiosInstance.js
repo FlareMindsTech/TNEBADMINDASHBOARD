@@ -320,12 +320,17 @@ export const getGalleryById = async (id) => {
 };
 
 export const deleteGalleryImage = async (galleryId, imageId) => {
+  const url = `${BASE_URL}/gallery/${galleryId}/image/${imageId}`;
   try {
-    const response = await fetch(`${BASE_URL}/gallery/${galleryId}/image/${imageId}`, {
+    console.log("Calling delete URL:", url);
+    const response = await fetch(url, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Error: ${response.status}`);
+    }
     return await response.json();
   } catch (error) {
     console.error("Error deleting gallery image:", error);

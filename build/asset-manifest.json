@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.js": "/static/js/main.89462743.js",
+    "static/js/239.f8cff69d.chunk.js": "/static/js/239.f8cff69d.chunk.js",
+    "static/js/977.5fb79de8.chunk.js": "/static/js/977.5fb79de8.chunk.js",
+    "static/js/455.740edf66.chunk.js": "/static/js/455.740edf66.chunk.js",
+    "static/media/fm logo.png": "/static/media/fm logo.c21c68602514518f9d4a.png",
+    "static/media/tnebea_logo_cropped2.webp": "/static/media/tnebea_logo_cropped2.55e42a02a13c98809409.webp",
+    "static/media/SidebarHelpImage.png": "/static/media/SidebarHelpImage.bace667c8b452f88fa9d.png",
+    "index.html": "/index.html",
+    "main.89462743.js.map": "/static/js/main.89462743.js.map",
+    "239.f8cff69d.chunk.js.map": "/static/js/239.f8cff69d.chunk.js.map",
+    "977.5fb79de8.chunk.js.map": "/static/js/977.5fb79de8.chunk.js.map",
+    "455.740edf66.chunk.js.map": "/static/js/455.740edf66.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.89462743.js"
+  ]
+}

@@ -606,7 +606,7 @@ const ModernCityMap = ({ districts, onDistrictHover, hoveredDistrict, loading })
 
 // Recent Orders Component
 const RecentOrders = ({ orders, loading }) => {
-  const accent = '#5a189a';
+  const accent = '#0A3D91';
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -685,7 +685,7 @@ const RecentOrders = ({ orders, loading }) => {
 
 // Enhanced Category Donut Chart Component with Product Details
 const CategoryDonutChart = ({ categoryStats, productStats, loading, activeView, onViewChange }) => {
-  const accent = '#5a189a';
+  const accent = '#0A3D91';
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const currentStats = activeView === 'categories' ? categoryStats : productStats;
@@ -1154,75 +1154,75 @@ export default function EcommerceDashboard() {
     >
       {/* Stats Cards Row */}
       <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 6 }} mb={6}>
-        <Card bg={cardBg} boxShadow="lg" borderRadius="xl">
+        <Card variant="glass" gridColumn={{ md: 'span 1' }}>
           <CardBody>
-            <HStack justify="space-between">
+            <HStack justify="space-between" mb={2}>
               <Box>
                 <Stat>
-                  <StatLabel color="gray.600" fontSize="sm" fontWeight="medium">Active Orders</StatLabel>
-                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} color="gray.800">
+                  <StatLabel color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="1px">Orders State</StatLabel>
+                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color="#0A3D91">
                     {loading ? <Spinner size="sm" /> : orderData.totalOrders}
                   </StatNumber>
-                  <Text fontSize="sm" color="gray.500">
-                    {loading ? 'Loading...' : `${orderData.districts.length} districts`}
-                  </Text>
+                  <Badge colorScheme="blue" borderRadius="full" px={2} fontSize="10px">
+                    ⚡ {orderData.districts.length} DISTRICTS
+                  </Badge>
                 </Stat>
               </Box>
               <Box>
-                <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg="#FEE2E2">
-                  <FiShoppingCart size={20} color={accent} />
+                <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bg="rgba(30, 136, 229, 0.1)" shadow="inner">
+                  <FiShoppingCart size={20} color="#1E88E5" />
                 </Flex>
               </Box>
             </HStack>
           </CardBody>
         </Card>
 
-        <Card bg={cardBg} boxShadow="lg" borderRadius="xl">
+        <Card variant="glass">
           <CardBody>
-            <HStack justify="space-between">
+            <HStack justify="space-between" mb={2}>
               <Box>
                 <Stat>
-                  <StatLabel color="gray.600" fontSize="sm" fontWeight="medium">Total Revenue</StatLabel>
-                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} color="gray.800">
+                  <StatLabel color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="1px">Revenue Grid</StatLabel>
+                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color="#0A3D91">
                     {loading ? <Spinner size="sm" /> : `₹${orderData.totalRevenue.toLocaleString()}`}
                   </StatNumber>
-                  <Text fontSize="sm" color="gray.500">
-                    From all orders
-                  </Text>
+                  <Badge colorScheme="green" borderRadius="full" px={2} fontSize="10px">
+                    +12.5% TARGET
+                  </Badge>
                 </Stat>
               </Box>
               <Box>
-                <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg="#FEF3C7">
-                  <FiDollarSign size={20} color="#D97706" />
+                <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bg="rgba(76, 175, 80, 0.1)" shadow="inner">
+                  <FiDollarSign size={20} color="#4CAF50" />
                 </Flex>
               </Box>
             </HStack>
           </CardBody>
         </Card>
 
-        <Card bg={cardBg} boxShadow="lg" borderRadius="xl">
+        <Card variant="glass">
           <CardBody>
-            <HStack justify="space-between">
+            <HStack justify="space-between" mb={2}>
               <Box>
                 <Stat>
-                  <StatLabel color="gray.600" fontSize="sm" fontWeight="medium">
-                    {activeChartView === 'categories' ? 'Categories' : 'Top Products'}
+                  <StatLabel color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="1px">
+                    System Load
                   </StatLabel>
-                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} color="gray.800">
+                  <StatNumber fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color="#0A3D91">
                     {loading ? <Spinner size="sm" /> :
                       activeChartView === 'categories'
                         ? orderData.categoryStats.details.length
                         : orderData.productStats.details.length
                     }
                   </StatNumber>
-                  <Text fontSize="sm" color="gray.500">
-                    {activeChartView === 'categories' ? 'Product categories' : 'Best selling products'}
-                  </Text>
+                  <Badge colorScheme="orange" borderRadius="full" px={2} fontSize="10px">
+                    ACTIVE SESSIONS
+                  </Badge>
                 </Stat>
               </Box>
               <Box>
-                <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg="#DCFCE7">
-                  <FiPackage size={20} color="#16A34A" />
+                <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bg="rgba(255, 152, 0, 0.1)" shadow="inner">
+                  <FiPackage size={20} color="#FF9800" />
                 </Flex>
               </Box>
             </HStack>
@@ -1242,26 +1242,17 @@ export default function EcommerceDashboard() {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: 'transparent',
-            borderRadius: '3px',
-            transition: 'background 0.3s ease',
+            background: 'rgba(0,0,0,0.05)',
+            borderRadius: '10px',
           },
           '&:hover::-webkit-scrollbar-thumb': {
-            background: '#cbd5e1',
-          },
-          '&:hover::-webkit-scrollbar-thumb:hover': {
-            background: '#94a3b8',
-          },
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'transparent transparent',
-          '&:hover': {
-            scrollbarColor: '#cbd5e1 transparent',
+            background: 'rgba(0,0,0,0.1)',
           },
         }}
       >
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 4, md: 6 }} minH="600px">
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 4, md: 6 }} minH="600px" pb={10}>
           {/* Left: Enhanced Donut Chart with Product Details */}
-          <Card bg={cardBg} boxShadow="lg" borderRadius="xl" gridColumn={{ md: 'span 1' }}>
+          <Card variant="glass" gridColumn={{ md: 'span 1' }}>
             <CardBody>
               <CategoryDonutChart
                 categoryStats={orderData.categoryStats}
@@ -1274,23 +1265,25 @@ export default function EcommerceDashboard() {
           </Card>
 
           {/* Center: Modern 3D City Map */}
-          <Card bg={cardBg} boxShadow="lg" borderRadius="xl" gridColumn={{ md: 'span 2' }}>
+          <Card variant="glass" gridColumn={{ md: 'span 2' }}>
             <CardBody>
               <Flex justify="space-between" align="center" mb={4}>
-                <Heading size="sm" color="gray.700">Order Distribution Map</Heading>
-                <Badge colorScheme="red" fontSize="sm">
-                  Total Orders: {loading ? '...' : orderData.totalOrders}
-                </Badge>
+                <Heading size="sm" color="gray.700" fontWeight="800">TNEB Service Distribution</Heading>
+                <HStack>
+                  <Badge colorScheme="blue" variant="solid" borderRadius="full">LIVE</Badge>
+                  <Badge colorScheme="gray" variant="outline" borderRadius="full">Orders: {loading ? '...' : orderData.totalOrders}</Badge>
+                </HStack>
               </Flex>
 
               <Box
                 h="300px"
-                borderRadius="lg"
-                bg="white"
+                borderRadius="2xl"
+                bg={mode("gray.50", "#0b1437")(props)}
                 border="1px solid"
-                borderColor="gray.200"
+                borderColor={mode("gray.200", "whiteAlpha.100")(props)}
                 overflow="hidden"
                 position="relative"
+                boxShadow="inner"
               >
                 <ModernCityMap
                   districts={orderData.districts}
@@ -1303,18 +1296,18 @@ export default function EcommerceDashboard() {
           </Card>
 
           {/* Sales Trend Line Chart */}
-          <Card bg={cardBg} boxShadow="lg" borderRadius="xl" gridColumn={{ md: 'span 2' }}>
+          <Card variant="glass" gridColumn={{ md: 'span 2' }}>
             <CardBody>
               <Flex justify="space-between" align="center" mb={4}>
-                <Heading size="sm" color="gray.700">Sales Trend</Heading>
-                <Badge colorScheme="green" fontSize="sm">
-                  Monthly Revenue
+                <Heading size="sm" color="gray.700" fontWeight="800">Performance Metrics</Heading>
+                <Badge colorScheme="green" variant="subtle" px={3} py={1} borderRadius="lg">
+                  Load Grid Status
                 </Badge>
               </Flex>
               <Box height="240px">
                 {loading ? (
                   <Flex justify="center" align="center" height="100%">
-                    <Spinner size="lg" color="#5a189a" />
+                    <Spinner size="lg" color="#0A3D91" />
                   </Flex>
                 ) : orderData.lineChartData.series.length > 0 ? (
                   <ReactApexChart
@@ -1325,8 +1318,8 @@ export default function EcommerceDashboard() {
                   />
                 ) : (
                   <Flex justify="center" align="center" height="100%" direction="column">
-                    <Text color="gray.500" mb={2}>No sales data available</Text>
-                    <Text fontSize="sm" color="gray.400">Sales trends will appear here once orders are processed</Text>
+                    <Text color="gray.500" mb={2}>No performance data</Text>
+                    <Text fontSize="sm" color="gray.400">Charts will update once orders are live</Text>
                   </Flex>
                 )}
               </Box>
@@ -1334,11 +1327,13 @@ export default function EcommerceDashboard() {
           </Card>
 
           {/* Bottom Left: Recent Orders */}
-          <Card bg={cardBg} boxShadow="lg" borderRadius="xl" gridColumn={{ md: 'span 1' }}>
+          <Card variant="glass" gridColumn={{ md: 'span 1' }}>
             <CardBody>
               <Flex align="center" mb={4}>
-                <FiPackage color={accent} style={{ marginRight: '8px' }} />
-                <Heading size="sm" color="gray.700">Recent Orders</Heading>
+                <Box p={2} bg="rgba(10, 61, 145, 0.1)" borderRadius="xl" me={3}>
+                  <FiRefreshCw color="#0A3D91" />
+                </Box>
+                <Heading size="sm" color="gray.700" fontWeight="800">Process Queue</Heading>
               </Flex>
               <RecentOrders orders={orderData.recentOrders} loading={loading} />
             </CardBody>

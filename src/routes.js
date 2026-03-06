@@ -27,7 +27,7 @@ import Carousel from "views/Dashboard/Carousel.js";
 import Events from "views/Dashboard/Events.js";
 
 
-const ICON_COLOR = "#d70f18";
+const ICON_COLOR = "#0A3D91";
 
 // ✅ Added: Logout component
 const Logout = () => {
@@ -45,7 +45,7 @@ var dashRoutes = [
   //   path: "/dashboard",
   //   name: "Dashboard",
   //   rtlName: "لوحة القيادة",
-  //   icon: <HomeIcon color="#d70f18" />,
+  //   icon: <HomeIcon color="#0A3D91" />,
   //   element: <Dashboard />,
   //   layout: "/admin",
   // },
@@ -53,7 +53,7 @@ var dashRoutes = [
     path: "/admin-management",
     name: "Gallery",
     rtlName: "إدارة المسؤول",
-    icon: <StatsIcon color="#d70f18" />,
+    icon: <StatsIcon color="#0A3D91" />,
     element: <AdminManagement />,
     layout: "/admin",
   },
@@ -68,7 +68,7 @@ var dashRoutes = [
   //   path: "/ProductManagement",
   //   name: "Product Management",
   //   rtlName: "إدارة المستخدمين",
-  //   icon: <StatsIcon color="#d70f18" />,
+  //   icon: <StatsIcon color="#0A3D91" />,
   //   element: <ProductManagement />,
   //   layout: "/admin",
   // },
@@ -76,7 +76,7 @@ var dashRoutes = [
   //   path: "/user-management",
   //   name: "User Management",
   //   rtlName: "إدارة المستخدمين",
-  //   icon: <StatsIcon color="#d70f18" />,
+  //   icon: <StatsIcon color="#0A3D91" />,
   //   element: <UserManagement />,
   //   layout: "/admin",
   // },
@@ -100,7 +100,7 @@ var dashRoutes = [
   //   path: "/billing",
   //   name: "Billing",
   //   rtlName: "الفواتير",
-  //   icon: <CreditIcon color="#d70f18" />,
+  //   icon: <CreditIcon color="#0A3D91" />,
   //   element: <Billing />,
   //   layout: "/admin",
   // },

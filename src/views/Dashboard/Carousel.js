@@ -27,6 +27,13 @@ import {
     Badge,
     Switch,
     Spinner,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -37,7 +44,8 @@ import {
     FaPlus,
     FaTrash,
     FaEdit,
-    FaImages
+    FaImages,
+    FaExclamationTriangle
 } from "react-icons/fa";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 import {
@@ -49,17 +57,23 @@ import {
 
 function Carousel() {
     const textColor = useColorModeValue("gray.700", "white");
-    const customColor = "#d70f18";
-    const customHoverColor = "#b00c14";
+    const customColor = "#0A3D91";
+    const customHoverColor = "#1E88E5";
     const toast = useToast();
 
     const [currentView, setCurrentView] = useState("list");
     const [loading, setLoading] = useState(false);
     const [slides, setSlides] = useState([]);
     const [editingSlide, setEditingSlide] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    // Delete modal states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [formData, setFormData] = useState({
-        title: "",
         image: null,
         active: true
     });
@@ -89,19 +103,18 @@ function Carousel() {
     const handleBackToList = () => {
         setCurrentView("list");
         setEditingSlide(null);
-        setFormData({ title: "", image: null, active: true });
+        setFormData({ image: null, active: true });
     };
 
     const handleAddSlide = () => {
         setEditingSlide(null);
-        setFormData({ title: "", image: null, active: true });
+        setFormData({ image: null, active: true });
         setCurrentView("add");
     };
 
     const handleEditSlide = (slide) => {
         setEditingSlide(slide);
         setFormData({
-            title: slide.title || "",
             image: null,
             active: slide.active !== undefined ? slide.active : true
         });
@@ -124,7 +137,6 @@ function Carousel() {
         setLoading(true);
 
         const data = new FormData();
-        data.append("title", formData.title);
         data.append("active", formData.active);
         if (formData.image) {
             data.append("image", formData.image);
@@ -152,13 +164,26 @@ function Carousel() {
         }
     };
 
-    const handleDeleteSlide = async (id) => {
-        if (!window.confirm("Delete this slide?")) return;
-        setLoading(true);
+    // Delete modal functions
+    const openDeleteModal = (id) => {
+        setDeleteTarget(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return;
+
+        setIsDeleting(true);
         try {
-            await deleteCarousel(id);
-            toast({ title: "Slide deleted", status: "success", duration: 2000 });
+            await deleteCarousel(deleteTarget);
+            toast({ title: "Slide deleted successfully", status: "success", duration: 2000 });
             fetchSlides();
+            closeDeleteModal();
         } catch (error) {
             toast({
                 title: "Delete failed",
@@ -167,7 +192,7 @@ function Carousel() {
                 duration: 3000,
             });
         } finally {
-            setLoading(false);
+            setIsDeleting(false);
         }
     };
 
@@ -188,10 +213,7 @@ function Carousel() {
                     <CardBody bg="white" flex="1" overflow="auto">
                         <Box as="form" onSubmit={handleSubmit}>
                             <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mb={4}>
-                                <FormControl isRequired>
-                                    <FormLabel color="gray.700">Title</FormLabel>
-                                    <Input name="title" placeholder="Slider Title" value={formData.title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
-                                </FormControl>
+
                                 <FormControl isRequired={currentView === "add"}>
                                     <FormLabel color="gray.700">Slide Image</FormLabel>
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
@@ -201,10 +223,7 @@ function Carousel() {
                                         <Text fontSize="xs" mt={2} color="gray.500">Existing image exists.</Text>
                                     )}
                                 </FormControl>
-                                <FormControl display="flex" alignItems="center">
-                                    <FormLabel htmlFor="active-toggle" mb="0" color="gray.700">Active Status</FormLabel>
-                                    <Switch id="active-toggle" name="active" isChecked={formData.active} onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))} colorScheme="red" />
-                                </FormControl>
+
                             </SimpleGrid>
                             <Button type="submit" isLoading={loading} bg={customColor} color="white" _hover={{ bg: customHoverColor }} mt={4} width="100%">
                                 {currentView === "add" ? "Add Slide" : "Update Slide"}
@@ -222,8 +241,8 @@ function Carousel() {
                 <CardBody>
                     <Flex align="center" justify="space-between">
                         <Stat>
-                            <StatLabel color="gray.600" fontWeight="bold">Active Slides</StatLabel>
-                            <StatNumber fontSize="xl">{slides.filter(s => s.active).length}</StatNumber>
+                            <StatLabel color="gray.600" fontWeight="bold">Total Images</StatLabel>
+                            <StatNumber fontSize="xl">{slides.length}</StatNumber>
                         </Stat>
                         <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px">
                             <Icon as={FaImages} w="24px" h="24px" />
@@ -235,9 +254,9 @@ function Carousel() {
     );
 
     return (
-        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }}>
+        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} h="calc(100vh - 20px)">
             {renderStats()}
-            <Card overflowX={{ sm: "scroll", xl: "hidden" }}>
+            <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
                 <CardHeader p="6px 0px 22px 0px">
                     <Flex justify="space-between" align="center" w="100%">
                         <Text fontSize="xl" color={textColor} fontWeight="bold">Carousel Table</Text>
@@ -246,49 +265,148 @@ function Carousel() {
                         </Button>
                     </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden">
                     {loading && slides.length === 0 ? (
                         <Flex justify="center" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
-                        <Table variant="simple" color={textColor}>
-                            <Thead>
-                                <Tr my=".8rem" pl="0px" color="gray.400">
-                                    <Th color="gray.400">Image</Th>
-                                    <Th color="gray.400">Title</Th>
-                                    <Th color="gray.400">Status</Th>
-                                    <Th color="gray.400" textAlign="center">Actions</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {slides.map((slide) => (
-                                    <Tr key={slide._id || slide.id}>
-                                        <Td>
-                                            <Image src={slide.image || slide.url} alt={slide.title} w="80px" h="50px" objectFit="cover" borderRadius="md" fallbackSrc="https://via.placeholder.com/80x50" />
-                                        </Td>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{slide.title}</Text></Td>
-                                        <Td>
-                                            <Badge colorScheme={slide.active ? "green" : "red"} variant="subtle" borderRadius="md">
-                                                {slide.active ? "Active" : "Inactive"}
-                                            </Badge>
-                                        </Td>
-                                        <Td textAlign="center">
-                                            <Flex justify="center">
-                                                <Button variant="ghost" colorScheme="blue" mr={2} onClick={() => handleEditSlide(slide)}><Icon as={FaEdit} /></Button>
-                                                <Button variant="ghost" colorScheme="red" onClick={() => handleDeleteSlide(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
-                                            </Flex>
-                                        </Td>
+                        <Box overflowY="auto" flex="1">
+                            <Table variant="simple" color={textColor}>
+                                <Thead>
+                                    <Tr my=".8rem" pl="0px" color="gray.400">
+                                        <Th color="gray.400">S.No</Th>
+                                        <Th color="gray.400">Image</Th>
+
+
+                                        <Th color="gray.400" textAlign="center">Actions</Th>
                                     </Tr>
-                                ))}
-                                {slides.length === 0 && (
-                                    <Tr>
-                                        <Td colSpan={4} textAlign="center" py={4}>No slides found.</Td>
-                                    </Tr>
-                                )}
-                            </Tbody>
-                        </Table>
+                                </Thead>
+                                <Tbody>
+                                    {slides
+                                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                                        .map((slide, index) => (
+                                            <Tr key={slide._id || slide.id}>
+                                                <Td><Text fontSize="md" color={textColor} fontWeight="bold">{(currentPage - 1) * itemsPerPage + index + 1}</Text></Td>
+                                                <Td>
+                                                    <Image src={slide.imageUrl || slide.url} alt={slide.title} w="80px" h="50px" objectFit="cover" borderRadius="md" fallbackSrc="https://via.placeholder.com/80x50" />
+                                                </Td>
+
+
+                                                <Td textAlign="center">
+                                                    <Flex justify="center">
+
+                                                        <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
+                                                    </Flex>
+                                                </Td>
+                                            </Tr>
+                                        ))}
+                                    {slides.length === 0 && (
+                                        <Tr>
+                                            <Td colSpan={3} textAlign="center" py={4}>No slides found.</Td>
+                                        </Tr>
+                                    )}
+                                </Tbody>
+                            </Table>
+                        </Box>
+                    )}
+                    {/* Pagination Controls */}
+                    {/* Pagination Controls */}
+                    {slides.length > 0 && (
+                        <Flex justify="space-between" mt={4} align="center" wrap="wrap">
+                            <Flex align="center">
+                                <Text fontSize="sm" mr={2} color="gray.500">Rows per page:</Text>
+                                <Select
+                                    w="70px"
+                                    size="sm"
+                                    value={itemsPerPage}
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                </Select>
+                            </Flex>
+
+                            <Flex align="center">
+                                <Button
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                    isDisabled={currentPage === 1}
+                                    mr={2}
+                                    size="sm"
+                                >
+                                    Previous
+                                </Button>
+                                <Text fontSize="sm" mx={2}>
+                                    Page {currentPage} of {Math.ceil(slides.length / itemsPerPage)}
+                                </Text>
+                                <Button
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(slides.length / itemsPerPage)))}
+                                    isDisabled={currentPage === Math.ceil(slides.length / itemsPerPage)}
+                                    ml={2}
+                                    size="sm"
+                                >
+                                    Next
+                                </Button>
+                            </Flex>
+                        </Flex>
                     )}
                 </CardBody>
             </Card>
+
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal} isCentered>
+                <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+                <ModalContent borderRadius="xl" mx={4}>
+                    <ModalHeader pb={2}>
+                        <Flex align="center" gap={3}>
+                            <Flex
+                                alignItems="center"
+                                justifyContent="center"
+                                borderRadius="full"
+                                bg="red.50"
+                                color="red.500"
+                                h="40px"
+                                w="40px"
+                            >
+                                <Icon as={FaExclamationTriangle} w="18px" h="18px" />
+                            </Flex>
+                            <Text fontSize="lg" fontWeight="bold" color="gray.700">
+                                Confirm Delete
+                            </Text>
+                        </Flex>
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Text color="gray.600">
+                            Are you sure you want to delete this slide? This action cannot be undone.
+                        </Text>
+                    </ModalBody>
+                    <ModalFooter gap={3}>
+                        <Button
+                            variant="outline"
+                            onClick={closeDeleteModal}
+                            borderColor="gray.300"
+                            color="gray.600"
+                            _hover={{ bg: "gray.50" }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            bg={customColor}
+                            color="white"
+                            _hover={{ bg: customHoverColor }}
+                            onClick={handleConfirmDelete}
+                            isLoading={isDeleting}
+                            loadingText="Deleting..."
+                            leftIcon={<Icon as={FaTrash} />}
+                        >
+                            Delete
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </Flex>
     );
 }

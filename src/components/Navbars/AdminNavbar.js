@@ -23,7 +23,7 @@ export default function AdminNavbar(props) {
 
   // Colors
   let mainText = useColorModeValue("gray.700", "gray.200");
-  let navbarBg = "#d70f18";
+  let navbarBg = "linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)";
   let navbarShadow = "none";
   let navbarBorder = "transparent";
 
@@ -36,7 +36,7 @@ export default function AdminNavbar(props) {
       );
       navbarBorder = useColorModeValue("#E2E8F0", "rgba(255,255,255,0.1)");
     } else {
-      navbarBg = useColorModeValue("#d70f18", "gray.800");
+      navbarBg = useColorModeValue("linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)", "gray.800");
       navbarShadow = "0px 4px 20px rgba(0, 0, 0, 0.05)";
     }
   }
@@ -55,7 +55,7 @@ export default function AdminNavbar(props) {
         left="0"
         right="0"
         height={{ base: "0px", md: "100px", lg: "110px", xl: "120px" }}
-        bg="#d70f18"
+        bg="linear-gradient(135deg, #0A3D91, #1E88E5, #42A5F5)"
         zIndex="-1"
       />
 
@@ -69,11 +69,12 @@ export default function AdminNavbar(props) {
         justify="space-between"
         px={{ base: 4, md: 6, lg: 10 }}
         minH={{ base: "70px", md: "80px", lg: "85px" }}
-        bg={navbarBg}
-        borderColor={navbarBorder}
-        borderWidth={fixed ? "1.5px" : "0px"}
-        boxShadow={navbarShadow}
-        transition="all 0.25s ease"
+        bg={scrolled ? useColorModeValue("rgba(255, 255, 255, 0.8)", "rgba(17, 25, 40, 0.8)") : navbarBg}
+        backdropFilter={scrolled ? "blur(20px)" : "none"}
+        borderColor={scrolled ? useColorModeValue("rgba(226, 232, 240, 0.3)", "rgba(255, 255, 255, 0.1)") : "transparent"}
+        borderBottomWidth={scrolled ? "1px" : "0px"}
+        boxShadow={scrolled ? "0px 10px 30px rgba(0, 0, 0, 0.05)" : navbarShadow}
+        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         zIndex="1000"
       >
         {/* MOBILE: HAMBURGER */}
