@@ -190,6 +190,7 @@ export const getAllMinthiran = async () => {
   try {
     const response = await fetch(`${BASE_URL}/minthiran`, {
       method: "GET",
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -203,6 +204,7 @@ export const createMinthiran = async (formData) => {
   try {
     const response = await fetch(`${BASE_URL}/minthiran`, {
       method: "POST",
+      headers: getAuthHeaders(true),
       body: formData, // Expecting FormData
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
@@ -217,7 +219,8 @@ export const updateMinthiran = async (id, formData) => {
   try {
     const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
       method: "PUT",
-      body: formData, // Expecting FormData
+      body: formData,
+      headers: getAuthHeaders(true), // Expecting FormData
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
@@ -231,6 +234,7 @@ export const deleteMinthiran = async (id) => {
   try {
     const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
       method: "DELETE",
+      headers: getAuthHeaders(true),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
     return await response.json();
