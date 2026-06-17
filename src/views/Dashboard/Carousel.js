@@ -75,7 +75,8 @@ function Carousel() {
 
     const [formData, setFormData] = useState({
         image: null,
-        active: true
+        active: true,
+        subtitle: ""
     });
 
     useEffect(() => {
@@ -103,12 +104,12 @@ function Carousel() {
     const handleBackToList = () => {
         setCurrentView("list");
         setEditingSlide(null);
-        setFormData({ image: null, active: true });
+        setFormData({ image: null, active: true, subtitle: "" });
     };
 
     const handleAddSlide = () => {
         setEditingSlide(null);
-        setFormData({ image: null, active: true });
+        setFormData({ image: null, active: true, subtitle: "" });
         setCurrentView("add");
     };
 
@@ -116,7 +117,8 @@ function Carousel() {
         setEditingSlide(slide);
         setFormData({
             image: null,
-            active: slide.active !== undefined ? slide.active : true
+            active: slide.active !== undefined ? slide.active : true,
+            subtitle: slide.subtitle || ""
         });
         setCurrentView("edit");
     };
@@ -140,6 +142,9 @@ function Carousel() {
         data.append("active", formData.active);
         if (formData.image) {
             data.append("image", formData.image);
+        }
+        if (formData.subtitle !== undefined) {
+            data.append("subtitle", formData.subtitle);
         }
 
         try {
@@ -224,6 +229,18 @@ function Carousel() {
                                     )}
                                 </FormControl>
 
+                                <FormControl>
+                                    <FormLabel color="gray.700">Subtitle</FormLabel>
+                                    <Input
+                                        type="text"
+                                        name="subtitle"
+                                        value={formData.subtitle || ""}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter slide subtitle"
+                                        color="gray.700"
+                                    />
+                                </FormControl>
+
                             </SimpleGrid>
                             <Button type="submit" isLoading={loading} bg={customColor} color="white" _hover={{ bg: customHoverColor }} mt={4} width="100%">
                                 {currentView === "add" ? "Add Slide" : "Update Slide"}
@@ -275,8 +292,7 @@ function Carousel() {
                                     <Tr my=".8rem" pl="0px" color="gray.400">
                                         <Th color="gray.400">S.No</Th>
                                         <Th color="gray.400">Image</Th>
-
-
+                                        <Th color="gray.400">Subtitle</Th>
                                         <Th color="gray.400" textAlign="center">Actions</Th>
                                     </Tr>
                                 </Thead>
@@ -289,11 +305,11 @@ function Carousel() {
                                                 <Td>
                                                     <Image src={slide.imageUrl || slide.url} alt={slide.title} w="80px" h="50px" objectFit="cover" borderRadius="md" fallbackSrc="https://via.placeholder.com/80x50" />
                                                 </Td>
-
-
+                                                <Td>
+                                                    <Text fontSize="md" color={textColor}>{slide.subtitle || "-"}</Text>
+                                                </Td>
                                                 <Td textAlign="center">
                                                     <Flex justify="center">
-
                                                         <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
                                                     </Flex>
                                                 </Td>
@@ -301,7 +317,7 @@ function Carousel() {
                                         ))}
                                     {slides.length === 0 && (
                                         <Tr>
-                                            <Td colSpan={3} textAlign="center" py={4}>No slides found.</Td>
+                                            <Td colSpan={4} textAlign="center" py={4}>No slides found.</Td>
                                         </Tr>
                                     )}
                                 </Tbody>
