@@ -174,11 +174,6 @@ function ImportantNotice() {
                 await updateNotice(editingNotice._id, data);
                 toast({ title: "Notice updated successfully", status: "success", duration: 3000 });
             } else {
-                if (!formData.document) {
-                    toast({ title: "Validation error", description: "Notice document file is required", status: "error", duration: 3000 });
-                    setLoading(false);
-                    return;
-                }
                 await createNotice(data);
                 toast({ title: "Notice created successfully", status: "success", duration: 3000 });
             }
@@ -256,8 +251,8 @@ function ImportantNotice() {
                                     <FormLabel color="gray.700">Date</FormLabel>
                                     <Input name="date" type="date" value={formData.date} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor }} />
                                 </FormControl>
-                                <FormControl isRequired={currentView === "add"}>
-                                    <FormLabel color="gray.700">Document File</FormLabel>
+                                <FormControl>
+                                    <FormLabel color="gray.700">Document File (Optional)</FormLabel>
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
                                         <Input type="file" name="document" accept=".pdf,image/*" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
