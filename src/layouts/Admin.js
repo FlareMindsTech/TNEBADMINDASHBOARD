@@ -222,7 +222,7 @@ export default function Dashboard(props) {
                 {getRoutes(routes)}
                 <Route
                   path="/admin"
-                  element={<Navigate to="/admin/dashboard" replace />}
+                  element={<Navigate to="/admin/admin-management" replace />}
                 />
               </Routes>
             </PanelContainer>

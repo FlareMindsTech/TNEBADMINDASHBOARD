@@ -25,7 +25,7 @@ ReactDOM.render(
           path="/"
           element={
             localStorage.getItem("token") ? (
-              <Navigate to="/admin/dashboard" replace />
+              <Navigate to="/admin/admin-management" replace />
             ) : (
               <Navigate to="/auth/signin" replace />
             )

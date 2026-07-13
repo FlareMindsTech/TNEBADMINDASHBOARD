@@ -25,6 +25,9 @@ import ProductManagement from "views/Dashboard/ProductManagement";
 import EMinthiran from "views/Dashboard/EMinthiran.js";
 import Carousel from "views/Dashboard/Carousel.js";
 import Events from "views/Dashboard/Events.js";
+import Forms from "views/Dashboard/Forms.js";
+import ImportantNotice from "views/Dashboard/ImportantNotice.js";
+import { FaFileAlt, FaBullhorn } from "react-icons/fa";
 
 
 const ICON_COLOR = "#0A3D91";
@@ -94,6 +97,20 @@ var dashRoutes = [
     name: "Carousel",
     icon: <RocketIcon color={ICON_COLOR} />,
     element: <Carousel />,
+    layout: "/admin",
+  },
+  {
+    path: "/forms",
+    name: "Forms",
+    icon: <FaFileAlt color={ICON_COLOR} />,
+    element: <Forms />,
+    layout: "/admin",
+  },
+  {
+    path: "/important-notice",
+    name: "Important Notice",
+    icon: <FaBullhorn color={ICON_COLOR} />,
+    element: <ImportantNotice />,
     layout: "/admin",
   },
   // {

@@ -783,3 +783,122 @@ export const deleteOffer = async (offerId) => {
     throw error;
   }
 };
+// ----- Forms APIs -----
+export const getAllForms = async (type = "") => {
+  try {
+    const url = type ? `${BASE_URL}/forms?type=${type}` : `${BASE_URL}/forms`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching forms:", error);
+    throw error;
+  }
+};
+
+export const createForm = async (formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/forms`, {
+      method: "POST",
+      headers: getAuthHeaders(true),
+      body: formData,
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating form:", error);
+    throw error;
+  }
+};
+
+export const updateForm = async (formId, formData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/forms/${formId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: formData,
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating form:", error);
+    throw error;
+  }
+};
+
+export const deleteForm = async (formId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/forms/${formId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting form:", error);
+    throw error;
+  }
+};
+
+// ----- Important Notice APIs -----
+export const getAllNotices = async (type = "") => {
+  try {
+    const url = type ? `${BASE_URL}/important-notices?Type=${type}` : `${BASE_URL}/important-notices`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching notices:", error);
+    throw error;
+  }
+};
+
+export const createNotice = async (noticeData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/important-notices`, {
+      method: "POST",
+      headers: getAuthHeaders(true),
+      body: noticeData,
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating notice:", error);
+    throw error;
+  }
+};
+
+export const updateNotice = async (noticeId, noticeData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/important-notices/${noticeId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: noticeData,
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating notice:", error);
+    throw error;
+  }
+};
+
+export const deleteNotice = async (noticeId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/important-notices/${noticeId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting notice:", error);
+    throw error;
+  }
+};
