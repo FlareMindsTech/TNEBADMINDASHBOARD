@@ -319,7 +319,26 @@ function ImportantNotice() {
                                 {currentNotices.map((notice, index) => (
                                     <Tr key={notice._id}>
                                         <Td><Text fontSize="md" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{notice.Notice_title}</Text></Td>
+                                        <Td>
+                                            {notice.docUrl ? (
+                                                <Text
+                                                    as="a"
+                                                    href={notice.docUrl}
+                                                    target="_blank"
+                                                    fontSize="md"
+                                                    color={customColor}
+                                                    fontWeight="bold"
+                                                    cursor="pointer"
+                                                    _hover={{ textDecoration: "underline", color: customHoverColor }}
+                                                >
+                                                    {notice.Notice_title}
+                                                </Text>
+                                            ) : (
+                                                <Text fontSize="md" color={textColor} fontWeight="bold">
+                                                    {notice.Notice_title}
+                                                </Text>
+                                            )}
+                                        </Td>
                                         <Td>
                                             <Badge colorScheme="purple">
                                                 {notice.Type ? notice.Type.toUpperCase() : "GENERAL"}
