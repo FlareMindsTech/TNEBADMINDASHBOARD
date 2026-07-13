@@ -45,7 +45,7 @@ function AdminLogin() {
   React.useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      navigate("/admin/dashboard");
+      navigate("/admin/admin-management");
     }
   }, [navigate]);
 
@@ -192,7 +192,7 @@ function AdminLogin() {
         isClosable: true,
       });
 
-      window.location.href = "#/admin/dashboard";
+      window.location.href = "#/admin/admin-management";
     } catch (err) {
       console.error("Login error:", err);
       toast({
