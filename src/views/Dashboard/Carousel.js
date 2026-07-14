@@ -309,8 +309,7 @@ function Carousel() {
                                                     <Text fontSize="md" color={textColor}>{slide.subtitle || "-"}</Text>
                                                 </Td>
                                                 <Td textAlign="center">
-                                                    <Flex justify="center" gap={2}>
-                                                        <Button variant="ghost" colorScheme="blue" onClick={() => handleEditSlide(slide)}><Icon as={FaEdit} /></Button>
+                                                    <Flex justify="center">
                                                         <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
                                                     </Flex>
                                                 </Td>
