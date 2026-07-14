@@ -24,7 +24,11 @@ const getInitialAdminData = () => {
     email: userData.email || "admin@example.com",
     joined: "N/A",
     avatar: userData.avatar || userData.profileImage || userData.image || "https://i.pravatar.cc/150?img=32",
-    actions: [],
+    actions: [
+      { icon: "users", label: "Manage Users" },
+      { icon: "box", label: "Manage Products" },
+      { icon: "chart", label: "Product Stock Overview" },
+    ],
     createdAdmins: [],
     adminProducts: [],
     allUsers: [],
@@ -703,6 +707,36 @@ export default function AdminProfile() {
             <Badge colorScheme={getRoleColor(adminData.role)} fontSize="sm" px={2} py={1}>
               {adminData.role}
             </Badge>
+            <Text fontSize="sm" mb={2}>{adminData.email}</Text>
+
+            <Divider my={3} />
+
+            <VStack spacing={2} align="start" w="100%" mb={4}>
+              {adminData.actions.map((action, idx) => (
+                <Button
+                  key={idx}
+                  variant="ghost"
+                  w="100%"
+                  justifyContent="start"
+                  leftIcon={
+                    action.icon === "users" ? <FaUsers /> :
+                      action.icon === "box" ? <FaBoxOpen /> :
+                        <FaChartPie />
+                  }
+                  onClick={() => handleActionClick(action)}
+                  colorScheme={
+                    currentView === "users" && action.label === "Manage Users" ? "#5a189a" :
+                      currentView === "products" && action.label === "Manage Products" ? "#5a189a" :
+                        currentView === "analytics" && action.label === "Product Stock Overview" ? "#5a189a" :
+                          "gray"
+                  }
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </VStack>
+
+
           </VStack>
         </Flex>
       </Card>
