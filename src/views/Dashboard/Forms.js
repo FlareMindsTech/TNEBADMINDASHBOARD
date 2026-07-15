@@ -107,7 +107,7 @@ function Forms() {
         try {
             const data = await getAllForms();
             let formsList = Array.isArray(data) ? data : [];
-            setForms(formsList);
+            setForms([...formsList].reverse());
         } catch (error) {
             toast({
                 title: "Error fetching forms",
