@@ -254,7 +254,7 @@ function ImportantNotice() {
                                 <FormControl>
                                     <FormLabel color="gray.700">Document File (Optional)</FormLabel>
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
-                                        <Input type="file" name="document" accept=".pdf,image/*" pt={1} variant="unstyled" onChange={handleInputChange} />
+                                        <Input type="file" name="document" accept=".pdf,.doc,.docx" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
                                     {currentView === "edit" && editingNotice?.docUrl && (
                                         <Text fontSize="xs" mt={2} color="gray.500">Current file exists. Upload new to replace.</Text>

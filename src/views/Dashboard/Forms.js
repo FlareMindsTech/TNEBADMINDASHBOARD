@@ -107,7 +107,7 @@ function Forms() {
         try {
             const data = await getAllForms();
             let formsList = Array.isArray(data) ? data : [];
-            setForms(formsList);
+            setForms([...formsList].reverse());
         } catch (error) {
             toast({
                 title: "Error fetching forms",
@@ -168,11 +168,6 @@ function Forms() {
                 await updateForm(editingForm._id, data);
                 toast({ title: "Form updated successfully", status: "success", duration: 3000 });
             } else {
-                if (!formData.pdf) {
-                    toast({ title: "Validation error", description: "PDF file is required", status: "error", duration: 3000 });
-                    setLoading(false);
-                    return;
-                }
                 await createForm(data);
                 toast({ title: "Form created successfully", status: "success", duration: 3000 });
             }
@@ -249,10 +244,10 @@ function Forms() {
                                         <option value="loan">Loan</option>
                                     </Select>
                                 </FormControl>
-                                <FormControl isRequired={currentView === "add"}>
-                                    <FormLabel color="gray.700">PDF File</FormLabel>
+                                <FormControl>
+                                    <FormLabel color="gray.700">Document File (Optional)</FormLabel>
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
-                                        <Input type="file" name="pdf" accept=".pdf" pt={1} variant="unstyled" onChange={handleInputChange} />
+                                        <Input type="file" name="pdf" accept=".pdf,.doc,.docx" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
                                     {currentView === "edit" && editingForm?.pdfUrl && (
                                         <Text fontSize="xs" mt={2} color="gray.500">Current file exists. Upload new to replace.</Text>
