@@ -27,7 +27,8 @@ import Carousel from "views/Dashboard/Carousel.js";
 import Events from "views/Dashboard/Events.js";
 import Forms from "views/Dashboard/Forms.js";
 import ImportantNotice from "views/Dashboard/ImportantNotice.js";
-import { FaFileAlt, FaBullhorn } from "react-icons/fa";
+import BoardProceedings from "views/Dashboard/BoardProceedings.js";
+import { FaFileAlt, FaBullhorn, FaClipboardList } from "react-icons/fa";
 
 
 const ICON_COLOR = "#0A3D91";
@@ -111,6 +112,13 @@ var dashRoutes = [
     name: "Important Notice",
     icon: <FaBullhorn color={ICON_COLOR} />,
     element: <ImportantNotice />,
+    layout: "/admin",
+  },
+  {
+    path: "/board-proceedings",
+    name: "Board Proceedings",
+    icon: <FaClipboardList color={ICON_COLOR} />,
+    element: <BoardProceedings />,
     layout: "/admin",
   },
   // {
