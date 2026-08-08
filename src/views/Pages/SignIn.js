@@ -174,7 +174,7 @@ function AdminLogin() {
 
     try {
       const res = await axios.post(
-        `${BASE_URL}/users/login`,
+        `${BASE_URL}/users/admin-login`,
         { identifier, password },
         { headers: { "Content-Type": "application/json" } }
       );
