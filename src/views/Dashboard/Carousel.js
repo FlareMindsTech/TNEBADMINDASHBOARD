@@ -224,6 +224,7 @@ function Carousel() {
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
                                         <Input type="file" name="image" accept="image/*" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
+                                    <Text fontSize="xs" mt={2} color="gray.500">Recommended Image Size: 1920x1080px (16:9 ratio) for best display.</Text>
                                     {currentView === "edit" && editingSlide?.image && (
                                         <Text fontSize="xs" mt={2} color="gray.500">Existing image exists.</Text>
                                     )}
