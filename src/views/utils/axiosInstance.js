@@ -230,63 +230,6 @@ export const deleteCarousel = async (id) => {
 
 // ----- E-Minthiran APIs -----
 export const getAllMinthiran = async () => {
-<<<<<<< HEAD
-  try {
-    const response = await fetch(`${BASE_URL}/minthiran`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching magazines:", error);
-    throw error;
-  }
-};
-
-export const createMinthiran = async (formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/minthiran`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: formData, // Expecting FormData
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating magazine:", error);
-    throw error;
-  }
-};
-
-export const updateMinthiran = async (id, formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
-      method: "PUT",
-      body: formData,
-      headers: getAuthHeaders(true), // Expecting FormData
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating magazine:", error);
-    throw error;
-  }
-};
-
-export const deleteMinthiran = async (id) => {
-  try {
-    const response = await fetch(`${BASE_URL}/minthiran/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(true),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting magazine:", error);
-    throw error;
-  }
-=======
   return apiRequest("/minthiran", { method: "GET" });
 };
 
@@ -310,7 +253,6 @@ export const deleteMinthiran = async (id) => {
   return apiRequest(`/minthiran/${id}`, {
     method: "DELETE",
   });
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
 };
 
 // ----- Gallery APIs -----

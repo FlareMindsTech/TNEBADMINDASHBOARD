@@ -1,29 +1,18 @@
-
+import React, { useState, useEffect } from "react";
 import {
     Box,
     Button,
     Flex,
-    FormControl,
-    FormLabel,
-    Grid,
     Icon,
-    Input,
-    Select,
-    SimpleGrid,
-    Stat,
-    StatLabel,
-    StatNumber,
     Table,
     Tbody,
     Td,
     Th,
     Thead,
     Tr,
-    useColorModeValue,
-    useToast,
-    Heading,
     Text,
-    Spinner,
+    useColorModeValue,
+    useDisclosure,
     Modal,
     ModalOverlay,
     ModalContent,
@@ -31,23 +20,31 @@ import {
     ModalFooter,
     ModalBody,
     ModalCloseButton,
-    useDisclosure,
+    FormControl,
+    FormLabel,
+    Input,
+    Select,
+    useToast,
+    Spinner,
+    Heading,
+    SimpleGrid,
+    Stat,
+    StatLabel,
+    StatNumber,
     HStack,
-    IconButton,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
 import CardHeader from "components/Card/CardHeader.js";
-import React, { useState, useEffect } from "react";
 import {
-    FaArrowLeft,
-    FaFilePdf,
     FaPlus,
     FaTrash,
     FaEdit,
     FaDownload,
+    FaFilePdf,
+    FaArrowLeft,
     FaChevronLeft,
-    FaChevronRight
+    FaChevronRight,
 } from "react-icons/fa";
 import { IoCheckmarkDoneCircleSharp } from "react-icons/io5";
 import {
@@ -55,7 +52,7 @@ import {
     createMinthiran,
     updateMinthiran,
     deleteMinthiran,
-    showErrorToast
+    showErrorToast,
 } from "views/utils/axiosInstance";
 
 function EMinthiran() {
@@ -71,85 +68,21 @@ function EMinthiran() {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [deleteId, setDeleteId] = useState(null);
 
-    // Pagination & Filters
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    // Filters
     const [filterYear, setFilterYear] = useState("");
     const [filterMonth, setFilterMonth] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    // Calculate Unique Years for Filter
-    const uniqueYears = [...new Set(pdfs.map(pdf => pdf.year))].sort((a, b) => b - a);
-
-    // Filter Logic
-    const filteredItems = pdfs.filter(pdf => {
-        let matchesYear = true;
-        let matchesMonth = true;
-        let matchesDate = true;
-
-        if (filterYear) {
-            matchesYear = pdf.year.toString() === filterYear;
-        }
-
-        if (filterMonth) {
-            matchesMonth = pdf.month === filterMonth;
-        }
-
-        if (startDate && endDate) {
-            const pdfDate = new Date(pdf.createdAt);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            // set end date to end of day
-            end.setHours(23, 59, 59, 999);
-            matchesDate = pdfDate >= start && pdfDate <= end;
-        } else if (startDate) {
-            const pdfDate = new Date(pdf.createdAt);
-            const start = new Date(startDate);
-            matchesDate = pdfDate >= start;
-        } else if (endDate) {
-            const pdfDate = new Date(pdf.createdAt);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            matchesDate = pdfDate <= end;
-        }
-
-        return matchesYear && matchesMonth && matchesDate;
-    });
-
-    // Pagination Logic
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentPdfs = pdfs.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(pdfs.length / itemsPerPage) || 1;
-
-    const handleNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
+    // Form state
     const [formData, setFormData] = useState({
         year: new Date().getFullYear().toString(),
         month: "January",
-        pdf: null
+        pdf: null,
     });
 
     useEffect(() => {
@@ -165,60 +98,45 @@ function EMinthiran() {
         setLoading(true);
         try {
             const data = await getAllMinthiran();
-<<<<<<< HEAD
-            let list = [];
-
-            if (Array.isArray(data)) {
-                list = data;
-            } else if (data.minthiran && Array.isArray(data.minthiran)) {
-                list = data.minthiran;
-            } else {
-                // Handle year-wise grouped object response
-                list = Object.values(data).reduce((acc, curr) => {
-                    if (Array.isArray(curr)) {
-                        return acc.concat(curr);
-                    }
-                    return acc;
-                }, []);
-            }
-
-            setPdfs([...list].reverse());
-        } catch (error) {
-            toast({
-                title: "Error fetching magazines",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-=======
             let all = [];
             if (Array.isArray(data)) {
-                data.forEach(yearGroup => {
+                data.forEach((yearGroup) => {
                     if (yearGroup.issues && Array.isArray(yearGroup.issues)) {
-                        yearGroup.issues.forEach(issue => {
+                        yearGroup.issues.forEach((issue) => {
                             all.push({
                                 ...issue,
                                 year: yearGroup.year,
-                                parentId: yearGroup._id
+                                parentId: yearGroup._id,
                             });
                         });
+                    } else {
+                        all.push(yearGroup);
                     }
                 });
+            } else if (data && typeof data === "object") {
+                if (data.minthiran && Array.isArray(data.minthiran)) {
+                    all = data.minthiran;
+                } else {
+                    all = Object.values(data).reduce((acc, curr) => {
+                        if (Array.isArray(curr)) return acc.concat(curr);
+                        return acc;
+                    }, []);
+                }
             }
 
             const monthOrder = {
                 january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-                july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+                july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
             };
 
             // Sort descending: highest year first, latest month first
             all.sort((a, b) => {
                 const yearDiff = (Number(b.year) || 0) - (Number(a.year) || 0);
                 if (yearDiff !== 0) return yearDiff;
-                const monthA = monthOrder[(a.month || '').toLowerCase()] || 0;
-                const monthB = monthOrder[(b.month || '').toLowerCase()] || 0;
+                const monthA = monthOrder[(a.month || "").toLowerCase()] || 0;
+                const monthB = monthOrder[(b.month || "").toLowerCase()] || 0;
                 if (monthB !== monthA) return monthB - monthA;
-                return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
+                return String(b._id || b.id || "").localeCompare(String(a._id || a.id || ""));
             });
 
             setPdfs(all);
@@ -226,6 +144,61 @@ function EMinthiran() {
             showErrorToast(toast, error, { title: "Failed to load magazines" });
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Calculate Unique Years for Filter
+    const uniqueYears = [...new Set(pdfs.map((pdf) => pdf.year))].filter(Boolean).sort((a, b) => b - a);
+
+    // Filter Logic
+    const filteredItems = pdfs.filter((pdf) => {
+        let matchesYear = true;
+        let matchesMonth = true;
+        let matchesDate = true;
+
+        if (filterYear) {
+            matchesYear = pdf.year?.toString() === filterYear;
+        }
+
+        if (filterMonth) {
+            matchesMonth = (pdf.month || "").toLowerCase() === filterMonth.toLowerCase();
+        }
+
+        if (startDate && endDate) {
+            const pdfDate = new Date(pdf.createdAt || pdf.date);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            matchesDate = pdfDate >= start && pdfDate <= end;
+        } else if (startDate) {
+            const pdfDate = new Date(pdf.createdAt || pdf.date);
+            const start = new Date(startDate);
+            matchesDate = pdfDate >= start;
+        } else if (endDate) {
+            const pdfDate = new Date(pdf.createdAt || pdf.date);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            matchesDate = pdfDate <= end;
+        }
+
+        return matchesYear && matchesMonth && matchesDate;
+    });
+
+    // Pagination Calculations
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentPdfs = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
         }
     };
 
@@ -246,17 +219,17 @@ function EMinthiran() {
         setFormData({
             year: pdf.year || "",
             month: pdf.month || "January",
-            pdf: null
+            pdf: null,
         });
         setCurrentView("edit");
     };
 
     const handleInputChange = (e) => {
         const { name, value, files } = e.target;
-        if (name === 'pdf') {
-            setFormData(prev => ({ ...prev, [name]: files[0] }));
+        if (name === "pdf") {
+            setFormData((prev) => ({ ...prev, [name]: files[0] }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
     };
 
@@ -274,10 +247,10 @@ function EMinthiran() {
         try {
             if (currentView === "edit" && editingPdf) {
                 await updateMinthiran(editingPdf._id || editingPdf.id, data);
-                toast({ title: "Magazine updated", status: "success", duration: 3000 });
+                toast({ title: "Magazine updated successfully", status: "success", duration: 3000, isClosable: true });
             } else {
                 await createMinthiran(data);
-                toast({ title: "Magazine created", status: "success", duration: 3000 });
+                toast({ title: "Magazine created successfully", status: "success", duration: 3000, isClosable: true });
             }
             fetchMagazines();
             handleBackToList();
@@ -298,7 +271,7 @@ function EMinthiran() {
         setLoading(true);
         try {
             await deleteMinthiran(deleteId);
-            toast({ title: "Magazine deleted", status: "success", duration: 2000 });
+            toast({ title: "Magazine deleted successfully", status: "success", duration: 2000, isClosable: true });
             fetchMagazines();
             onClose();
         } catch (error) {
@@ -353,7 +326,7 @@ function EMinthiran() {
                                         <Input type="file" name="pdf" accept=".pdf" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
                                     {currentView === "edit" && editingPdf?.pdf && (
-                                        <Text fontSize="xs" mt={2} color="gray.500">Existing PDF exists.</Text>
+                                        <Text fontSize="xs" mt={2} color="gray.500">Existing PDF file attached.</Text>
                                     )}
                                 </FormControl>
                             </SimpleGrid>
@@ -388,56 +361,6 @@ function EMinthiran() {
     return (
         <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} h="calc(100vh - 20px)">
             {renderStats()}
-<<<<<<< HEAD
-            <Card overflowX={{ sm: "scroll", xl: "hidden" }}>
-                <CardHeader p="6px 0px 22px 0px">
-                    <Flex justify="space-between" align="center" w="100%">
-                        <Text fontSize="xl" color={textColor} fontWeight="bold">e-Minthiran Table</Text>
-                        <Button bg={customColor} color="white" _hover={{ bg: customHoverColor }} onClick={handleAddMagazine} leftIcon={<FaPlus />}>
-                            Upload Magazine
-                        </Button>
-                    </Flex>
-                </CardHeader>
-                <CardBody>
-                    {/* Filters */}
-                    <Flex mb={4} gap={4} wrap="wrap" alignItems="flex-end">
-                        <FormControl w={{ base: "100%", md: "200px" }}>
-                            <FormLabel fontSize="sm" color="gray.500">Filter by Year</FormLabel>
-                            <Select placeholder="All Years" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} size="sm">
-                                {uniqueYears.map(year => (
-                                    <option key={year} value={year}>{year}</option>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <FormControl w={{ base: "100%", md: "200px" }}>
-                            <FormLabel fontSize="sm" color="gray.500">Filter by Month</FormLabel>
-                            <Select placeholder="All Months" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} size="sm">
-                                <option value="January">January</option>
-                                <option value="February">February</option>
-                                <option value="March">March</option>
-                                <option value="April">April</option>
-                                <option value="May">May</option>
-                                <option value="June">June</option>
-                                <option value="July">July</option>
-                                <option value="August">August</option>
-                                <option value="September">September</option>
-                                <option value="October">October</option>
-                                <option value="November">November</option>
-                                <option value="December">December</option>
-                            </Select>
-                        </FormControl>
-                        <FormControl w={{ base: "100%", md: "200px" }}>
-                            <FormLabel fontSize="sm" color="gray.500">Start Date</FormLabel>
-                            <Input type="date" size="sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        </FormControl>
-                        <FormControl w={{ base: "100%", md: "200px" }}>
-                            <FormLabel fontSize="sm" color="gray.500">End Date</FormLabel>
-                            <Input type="date" size="sm" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        </FormControl>
-                        <Button size="sm" onClick={() => { setFilterYear(""); setFilterMonth(""); setStartDate(""); setEndDate(""); }} colorScheme="gray">Clear</Button>
-                    </Flex>
-
-=======
             <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
                 <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
                     <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
@@ -473,22 +396,54 @@ function EMinthiran() {
                     </Flex>
                 </CardHeader>
                 <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden" p={0}>
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
+                    {/* Filters */}
+                    <Flex px={{ base: 4, md: 6 }} py={2} gap={3} wrap="wrap" alignItems="flex-end" borderBottom="1px solid" borderColor="gray.100">
+                        <FormControl w={{ base: "100%", sm: "140px" }}>
+                            <FormLabel fontSize="xs" color="gray.500" mb={1}>Year</FormLabel>
+                            <Select placeholder="All Years" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} size="xs">
+                                {uniqueYears.map((year) => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <FormControl w={{ base: "100%", sm: "140px" }}>
+                            <FormLabel fontSize="xs" color="gray.500" mb={1}>Month</FormLabel>
+                            <Select placeholder="All Months" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} size="xs">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June">June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </Select>
+                        </FormControl>
+                        <FormControl w={{ base: "100%", sm: "140px" }}>
+                            <FormLabel fontSize="xs" color="gray.500" mb={1}>Start Date</FormLabel>
+                            <Input type="date" size="xs" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                        </FormControl>
+                        <FormControl w={{ base: "100%", sm: "140px" }}>
+                            <FormLabel fontSize="xs" color="gray.500" mb={1}>End Date</FormLabel>
+                            <Input type="date" size="xs" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                        </FormControl>
+                        <Button size="xs" onClick={() => { setFilterYear(""); setFilterMonth(""); setStartDate(""); setEndDate(""); }} colorScheme="gray" variant="outline">
+                            Clear
+                        </Button>
+                    </Flex>
+
                     {loading && pdfs.length === 0 ? (
                         <Flex justify="center" align="center" flex="1" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
-<<<<<<< HEAD
-                        <Box>
-                            <Table variant="simple" color={textColor} mb={4}>
-                                <Thead>
-                                    <Tr my=".8rem" pl="0px" color="gray.400">
-=======
                         <Box overflowY="auto" overflowX="auto" flex="1" px={{ base: 2, md: 4 }}>
                             <Table variant="simple" color={textColor} minW={{ base: "550px", md: "100%" }}>
                                 <Thead>
                                     <Tr my=".8rem" pl="0px" color="gray.400">
                                         <Th color="gray.400">S.No</Th>
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
                                         <Th color="gray.400">Title / File</Th>
                                         <Th color="gray.400">Year</Th>
                                         <Th color="gray.400">Month</Th>
@@ -496,25 +451,6 @@ function EMinthiran() {
                                     </Tr>
                                 </Thead>
                                 <Tbody>
-<<<<<<< HEAD
-                                    {currentItems.map((pdf) => (
-                                        <Tr key={pdf._id || pdf.id}>
-                                            <Td>
-                                                <Flex align="center">
-                                                    <Icon as={FaFilePdf} color="red.500" mr={2} />
-                                                    <Text fontSize="md" color={textColor} fontWeight="bold">{pdf.title || `Minthiran ${pdf.month} ${pdf.year}`}</Text>
-                                                </Flex>
-                                            </Td>
-                                            <Td><Text fontSize="md" color={textColor}>{pdf.year}</Text></Td>
-                                            <Td><Text fontSize="md" color={textColor}>{pdf.month}</Text></Td>
-                                            <Td textAlign="center">
-                                                <Flex justify="center">
-                                                    {pdf.pdf?.url && (
-                                                        <Button as="a" href={pdf.pdf.url} target="_blank" variant="ghost" colorScheme="blue" mr={2}><Icon as={FaDownload} /></Button>
-                                                    )}
-                                                    <Button variant="ghost" colorScheme="orange" mr={2} onClick={() => handleEditMagazine(pdf)}><Icon as={FaEdit} /></Button>
-                                                    <Button variant="ghost" colorScheme="red" onClick={() => handleDeleteMagazine(pdf._id || pdf.id)}><Icon as={FaTrash} /></Button>
-=======
                                     {currentPdfs.map((pdf, index) => (
                                         <Tr key={pdf._id || pdf.id}>
                                             <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
@@ -533,60 +469,21 @@ function EMinthiran() {
                                                     )}
                                                     <Button variant="ghost" colorScheme="orange" size="sm" mr={1} onClick={() => handleEditMagazine(pdf)}><Icon as={FaEdit} /></Button>
                                                     <Button variant="ghost" colorScheme="red" size="sm" onClick={() => handleDeleteMagazine(pdf._id || pdf.id)}><Icon as={FaTrash} /></Button>
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
                                                 </Flex>
                                             </Td>
                                         </Tr>
                                     ))}
-<<<<<<< HEAD
-                                    {currentItems.length === 0 && (
-                                        <Tr>
-                                            <Td colSpan={4} textAlign="center" py={4}>No magazines found.</Td>
-=======
-                                    {pdfs.length === 0 && (
+                                    {filteredItems.length === 0 && (
                                         <Tr>
                                             <Td colSpan={5} textAlign="center" py={4}>No magazines found.</Td>
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
                                         </Tr>
                                     )}
                                 </Tbody>
                             </Table>
-<<<<<<< HEAD
-                            {/* Pagination */}
-                            <Flex justify="flex-end" align="center" mt={4}>
-                                <HStack spacing={2}>
-                                    <IconButton
-                                        icon={<FaChevronLeft />}
-                                        onClick={() => paginate(currentPage - 1)}
-                                        isDisabled={currentPage === 1}
-                                        aria-label="Previous Page"
-                                        size="sm"
-                                    />
-                                    {Array.from({ length: totalPages }, (_, i) => (
-                                        <Button
-                                            key={i + 1}
-                                            size="sm"
-                                            onClick={() => paginate(i + 1)}
-                                            bg={currentPage === i + 1 ? customColor : "gray.200"}
-                                            color={currentPage === i + 1 ? "white" : "gray.700"}
-                                            _hover={{ bg: currentPage === i + 1 ? customHoverColor : "gray.300" }}
-                                        >
-                                            {i + 1}
-                                        </Button>
-                                    ))}
-                                    <IconButton
-                                        icon={<FaChevronRight />}
-                                        onClick={() => paginate(currentPage + 1)}
-                                        isDisabled={currentPage === totalPages}
-                                        aria-label="Next Page"
-                                        size="sm"
-                                    />
-                                </HStack>
-=======
                         </Box>
                     )}
                     {/* Fixed Pagination Controls */}
-                    {pdfs.length > 0 && (
+                    {filteredItems.length > 0 && (
                         <Box flexShrink={0} px={{ base: "12px", md: "20px" }} py="10px" borderTop="1px solid" borderColor="gray.100" bg="white">
                             <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={2}>
                                 <Flex align="center" justify={{ base: "space-between", sm: "flex-start" }} w={{ base: "100%", sm: "auto" }}>
@@ -607,7 +504,7 @@ function EMinthiran() {
                                         </Select>
                                     </Flex>
                                     <Text fontSize="xs" color="gray.600" ml={3} whiteSpace="nowrap">
-                                        Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, pdfs.length)} of {pdfs.length}
+                                        Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredItems.length)} of {filteredItems.length}
                                     </Text>
                                 </Flex>
 
@@ -656,7 +553,6 @@ function EMinthiran() {
                                         Next
                                     </Button>
                                 </Flex>
->>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
                             </Flex>
                         </Box>
                     )}
@@ -681,7 +577,7 @@ function EMinthiran() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </Flex >
+        </Flex>
     );
 }
 
