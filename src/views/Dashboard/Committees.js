@@ -493,8 +493,7 @@ function Committees() {
     } finally {
       setIsDeletingResp(false);
     }
-  };
-      setIsDeletingResp(false);
+
     }
   };
 
@@ -1515,6 +1514,6 @@ function Committees() {
       </Modal>
     </Flex>
   );
-}
+
 
 export default Committees;
