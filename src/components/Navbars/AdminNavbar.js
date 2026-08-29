@@ -80,9 +80,9 @@ export default function AdminNavbar(props) {
         {/* MOBILE: HAMBURGER */}
         <IconButton
           aria-label="Open Menu"
-          icon={<HamburgerIcon />}
+          icon={<HamburgerIcon boxSize={5} />}
           display={{ base: "flex", lg: "none" }}
-          color="white"
+          color={scrolled ? useColorModeValue("gray.700", "white") : "white"}
           bg="transparent"
           _hover={{ bg: "rgba(255,255,255,0.2)" }}
           onClick={onOpen}

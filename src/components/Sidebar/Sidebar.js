@@ -403,15 +403,29 @@ function Sidebar(props) {
           flexDirection="column"
         >
           <Box flex="1" display="flex" flexDirection="column" overflow="hidden">
-            <Box>{brand}</Box>
-            <Stack direction="column" mb={{
-              base: "30px", // 320px - 480px
-              sm: "35px",   // 481px - 767px
-              md: "40px",   // 768px - 1024px
-              lg: "40px",   // 1025px - 1280px
-              xl: "40px"    // 1281px +
-            }} flex="1" overflow="hidden">
-              <Box overflow="hidden" flex="1">
+            <Box flexShrink={0}>{brand}</Box>
+            <Stack direction="column" mb="10px" flex="1" overflow="hidden">
+              <Box
+                overflowY="auto"
+                overflowX="hidden"
+                flex="1"
+                pr="4px"
+                css={{
+                  "&::-webkit-scrollbar": {
+                    width: "4px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    background: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "rgba(10, 61, 145, 0.2)",
+                    borderRadius: "4px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: "rgba(10, 61, 145, 0.4)",
+                  },
+                }}
+              >
                 {links}
               </Box>
             </Stack>
@@ -438,7 +452,7 @@ function Sidebar(props) {
                   boxSize={{ base: "20px", sm: "18px", md: "20px", lg: "20px" }}
                   objectFit="contain"
                 />
-                <strong>FlareMinds</strong>
+                
               </Text>
             </Flex>
           </Box>
@@ -835,23 +849,32 @@ export function SidebarResponsive(props) {
             }}
             display="flex"
             flexDirection="column"
-            overflow="hidden"
+            overflowY="auto"
+            overflowX="hidden"
+            css={{
+              "&::-webkit-scrollbar": {
+                width: "4px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(10, 61, 145, 0.2)",
+                borderRadius: "4px",
+              },
+            }}
           >
             <Box
               w="100%"
-              h="100%"
+              minH="100%"
               display="flex"
               flexDirection="column"
               justifyContent="space-between"
             >
-              <Box flex="1" display="flex" flexDirection="column" overflow="hidden">
-                <Box>{brand}</Box>
-                <Stack direction="column" mb={{
-                  base: "30px", // 320px - 480px
-                  sm: "35px",   // 481px - 767px
-                  md: "40px"    // 768px - 1024px
-                }} flex="1" overflow="hidden">
-                  <Box overflow="auto" flex="1">
+              <Box flex="1" display="flex" flexDirection="column">
+                <Box flexShrink={0}>{brand}</Box>
+                <Stack direction="column" mb="20px" flex="1">
+                  <Box overflowY="auto" overflowX="hidden" flex="1">
                     {links}
                   </Box>
                 </Stack>
@@ -882,7 +905,7 @@ export function SidebarResponsive(props) {
                       boxSize={{ base: "20px", sm: "20px", md: "22px" }}
                       objectFit="contain"
                     />
-                    <strong>FlareMinds</strong>
+                    
                   </Text>
                 </Flex>
               </Box>

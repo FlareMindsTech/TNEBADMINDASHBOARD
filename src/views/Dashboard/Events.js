@@ -55,7 +55,8 @@ import {
     getAllEvents,
     createEvent,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    showErrorToast
 } from "views/utils/axiosInstance";
 
 function Events() {
@@ -71,7 +72,7 @@ function Events() {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
 
     // Delete modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -118,13 +119,7 @@ function Events() {
 
             setEvents(eventsList);
         } catch (error) {
-            toast({
-                title: "Error fetching events",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
+            showErrorToast(toast, error, { title: "Failed to load events" });
         } finally {
             setLoading(false);
         }
@@ -170,13 +165,14 @@ function Events() {
         data.append("title", formData.title);
         data.append("description", formData.description);
         data.append("date", formData.date);
+        data.append("category", "new_event");
         if (formData.pdf) {
             data.append("pdf", formData.pdf);
         }
 
         try {
             if (currentView === "edit" && editingEvent) {
-                await updateEvent(editingEvent._id, data);
+                await updateEvent(editingEvent._id || editingEvent.id, data);
                 toast({ title: "Event updated successfully", status: "success", duration: 3000 });
             } else {
                 await createEvent(data);
@@ -185,12 +181,7 @@ function Events() {
             fetchEvents();
             handleBackToList();
         } catch (error) {
-            toast({
-                title: "Operation failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error);
         } finally {
             setLoading(false);
         }
@@ -217,12 +208,7 @@ function Events() {
             fetchEvents();
             closeDeleteModal();
         } catch (error) {
-            toast({
-                title: "Delete failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error, { title: "Delete Failed" });
         } finally {
             setIsDeleting(false);
         }
@@ -262,7 +248,7 @@ function Events() {
                                     <Box border={`1px dashed ${customColor}50`} p={2} borderRadius="md" _hover={{ borderColor: customColor }}>
                                         <Input type="file" name="pdf" accept=".pdf,image/*" pt={1} variant="unstyled" onChange={handleInputChange} />
                                     </Box>
-                                    {currentView === "edit" && editingEvent?.pdf && (
+                                    {currentView === "edit" && (editingEvent?.pdf || editingEvent?.pdfUrl) && (
                                         <Text fontSize="xs" mt={2} color="gray.500">Current file exists. Upload new to replace.</Text>
                                     )}
                                 </FormControl>
@@ -278,16 +264,16 @@ function Events() {
     }
 
     const renderStats = () => (
-        <Flex flexDirection={{ base: "column", md: "row" }} gap={4} mb={4}>
-            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "32%", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
+        <Flex flexDirection={{ base: "column", sm: "row" }} gap={4} mb={4} w="100%">
+            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "100%", sm: "240px", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
                 <CardBody>
                     <Flex align="center" justify="space-between">
                         <Stat>
                             <StatLabel color="gray.600" fontWeight="bold">Total Events</StatLabel>
                             <StatNumber fontSize="xl">{events.length}</StatNumber>
                         </Stat>
-                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px">
-                            <Icon as={FaCalendarAlt} w="24px" h="24px" />
+                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px" flexShrink={0}>
+                            <Icon as={FaCalendarAlt} w="22px" h="22px" />
                         </Flex>
                     </Flex>
                 </CardBody>
@@ -296,82 +282,118 @@ function Events() {
     );
 
     return (
-        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }}>
+        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} h="calc(100vh - 20px)">
             {renderStats()}
-            <Card overflowX={{ sm: "scroll", xl: "hidden" }}>
-                <CardHeader p="6px 0px 22px 0px">
-                    <Flex justify="space-between" align="center" w="100%">
-                        <Text fontSize="xl" color={textColor} fontWeight="bold">Events Table</Text>
-                        <Button bg={customColor} color="white" _hover={{ bg: customHoverColor }} onClick={handleAddEvent} leftIcon={<FaPlus />}>
-                            Add Event
+            <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
+                <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
+                    <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
+                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Events Table</Text>
+                        <Button
+                            bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
+                            color="white"
+                            px={{ base: "20px", md: "24px" }}
+                            py="10px"
+                            minH="42px"
+                            minW="fit-content"
+                            borderRadius="10px"
+                            boxShadow="0 4px 12px rgba(10, 61, 145, 0.25)"
+                            _hover={{
+                                bg: "linear-gradient(135deg, #083075 0%, #0A3D91 100%)",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 6px 18px rgba(10, 61, 145, 0.35)",
+                            }}
+                            _active={{
+                                transform: "translateY(0)",
+                                boxShadow: "0 2px 6px rgba(10, 61, 145, 0.2)",
+                            }}
+                            transition="all 0.2s ease"
+                            onClick={handleAddEvent}
+                        >
+                            <Flex align="center" gap="8px">
+                                <Icon as={FaPlus} boxSize="13px" />
+                                <Text fontSize="sm" fontWeight="600" letterSpacing="0.2px">
+                                    Add Event
+                                </Text>
+                            </Flex>
                         </Button>
                     </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden" p={0}>
                     {loading && events.length === 0 ? (
-                        <Flex justify="center" p={8}><Spinner color={customColor} /></Flex>
+                        <Flex justify="center" align="center" flex="1" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
-                        <Table variant="simple" color={textColor}>
-                            <Thead>
-                                <Tr my=".8rem" pl="0px" color="gray.400">
-                                    <Th color="gray.400">S.No</Th>
-                                    <Th color="gray.400">Title</Th>
-                                    <Th color="gray.400">Description</Th>
-                                    <Th color="gray.400">Date</Th>
-                                    <Th color="gray.400" textAlign="center">Actions</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {currentEvents.map((event, index) => (
-                                    <Tr key={event._id || event.id}>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{event.title}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor}>{event.description}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor} whiteSpace="nowrap">{event.date ? event.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
-                                        <Td textAlign="center">
-                                            <Flex justify="center">
-                                                {event.pdf && (
-                                                    <Button as="a" href={event.pdf} target="_blank" variant="ghost" colorScheme="orange" mr={2}>
-                                                        <Icon as={event.pdf.toLowerCase().endsWith('.pdf') ? FaFilePdf : FaFileImage} />
-                                                    </Button>
-                                                )}
-                                                <Button variant="ghost" colorScheme="blue" mr={2} onClick={() => handleEditEvent(event)}><Icon as={FaEdit} /></Button>
-                                                <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(event._id || event.id)}><Icon as={FaTrash} /></Button>
-                                            </Flex>
-                                        </Td>
+                        <Box overflowY="auto" overflowX="auto" flex="1" px={{ base: 2, md: 4 }}>
+                            <Table variant="simple" color={textColor} minW={{ base: "550px", md: "100%" }}>
+                                <Thead>
+                                    <Tr my=".8rem" pl="0px" color="gray.400">
+                                        <Th color="gray.400">S.No</Th>
+                                        <Th color="gray.400">Title</Th>
+                                        <Th color="gray.400">Description</Th>
+                                        <Th color="gray.400">Date</Th>
+                                        <Th color="gray.400" textAlign="center">Actions</Th>
                                     </Tr>
-                                ))}
-                                {events.length === 0 && (
-                                    <Tr>
-                                        <Td colSpan={5} textAlign="center" py={4}>No events found.</Td>
-                                    </Tr>
-                                )}
-                            </Tbody>
-                        </Table>
+                                </Thead>
+                                <Tbody>
+                                    {currentEvents.map((event, index) => {
+                                        const fileUrl = event.pdfUrl || event.pdf;
+                                        return (
+                                            <Tr key={event._id || event.id}>
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{event.title}</Text></Td>
+                                                <Td><Text fontSize="sm" color={textColor}>{event.description}</Text></Td>
+                                                <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{event.date ? event.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
+                                                <Td textAlign="center">
+                                                    <Flex justify="center">
+                                                        {fileUrl && (
+                                                            <Button as="a" href={fileUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
+                                                                <Icon as={fileUrl.toLowerCase().endsWith('.pdf') ? FaFilePdf : FaFileImage} />
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditEvent(event)}><Icon as={FaEdit} /></Button>
+                                                        <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(event._id || event.id)}><Icon as={FaTrash} /></Button>
+                                                    </Flex>
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })}
+                                    {events.length === 0 && (
+                                        <Tr>
+                                            <Td colSpan={5} textAlign="center" py={4}>No events found.</Td>
+                                        </Tr>
+                                    )}
+                                </Tbody>
+                            </Table>
+                        </Box>
                     )}
-                    {/* Pagination Controls */}
+                    {/* Fixed Pagination Controls */}
                     {events.length > 0 && (
-                        <Box
-                            flexShrink={0}
-                            p="16px"
-                            borderTop="1px solid"
-                            borderColor={`${customColor}20`}
-                            bg="transparent"
-                        >
-                            <Flex
-                                justify="flex-end"
-                                align="center"
-                                gap={3}
-                            >
-                                {/* Page Info */}
-                                <Text fontSize="sm" color="gray.600" display={{ base: "none", sm: "block" }}>
-                                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, events.length)} of {events.length} events
-                                </Text>
+                        <Box flexShrink={0} px={{ base: "12px", md: "20px" }} py="10px" borderTop="1px solid" borderColor="gray.100" bg="white">
+                            <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={2}>
+                                <Flex align="center" justify={{ base: "space-between", sm: "flex-start" }} w={{ base: "100%", sm: "auto" }}>
+                                    <Flex align="center">
+                                        <Text fontSize="xs" mr={1} color="gray.500" whiteSpace="nowrap">Rows:</Text>
+                                        <Select
+                                            w="65px"
+                                            size="xs"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                        >
+                                            <option value={5}>5</option>
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                        </Select>
+                                    </Flex>
+                                    <Text fontSize="xs" color="gray.600" ml={3} whiteSpace="nowrap">
+                                        Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, events.length)} of {events.length}
+                                    </Text>
+                                </Flex>
 
-                                {/* Pagination Controls */}
-                                <Flex align="center" gap={2}>
+                                <Flex align="center" justify={{ base: "center", sm: "flex-end" }} w={{ base: "100%", sm: "auto" }} gap={1}>
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         onClick={handlePrevPage}
                                         isDisabled={currentPage === 1}
                                         leftIcon={<FaChevronLeft />}
@@ -388,33 +410,13 @@ function Events() {
                                             borderColor: "gray.300"
                                         }}
                                     >
-                                        <Text display={{ base: "none", sm: "block" }}>Previous</Text>
+                                        Previous
                                     </Button>
-
-                                    {/* Page Number Display */}
-                                    <Flex
-                                        align="center"
-                                        gap={2}
-                                        bg={`${customColor}10`}
-                                        px={3}
-                                        py={1}
-                                        borderRadius="6px"
-                                        minW="80px"
-                                        justify="center"
-                                    >
-                                        <Text fontSize="sm" fontWeight="bold" color={customColor}>
-                                            {currentPage}
-                                        </Text>
-                                        <Text fontSize="sm" color="gray.500">
-                                            /
-                                        </Text>
-                                        <Text fontSize="sm" color="gray.600" fontWeight="medium">
-                                            {totalPages}
-                                        </Text>
-                                    </Flex>
-
+                                    <Text fontSize="xs" mx={2} color="gray.600" whiteSpace="nowrap">
+                                        Page {currentPage} of {totalPages}
+                                    </Text>
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         onClick={handleNextPage}
                                         isDisabled={currentPage === totalPages}
                                         rightIcon={<FaChevronRight />}
@@ -431,7 +433,7 @@ function Events() {
                                             borderColor: "gray.300"
                                         }}
                                     >
-                                        <Text display={{ base: "none", sm: "block" }}>Next</Text>
+                                        Next
                                     </Button>
                                 </Flex>
                             </Flex>

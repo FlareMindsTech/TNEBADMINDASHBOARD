@@ -37,7 +37,7 @@ import { FaWind, FaSolarPanel, FaBolt } from "react-icons/fa";
 import { WiDaySunny } from "react-icons/wi";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { BASE_URL } from "views/utils/axiosInstance";
+import { BASE_URL, showErrorToast } from "views/utils/axiosInstance";
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -194,14 +194,7 @@ function AdminLogin() {
 
       window.location.href = "#/admin/admin-management";
     } catch (err) {
-      console.error("Login error:", err);
-      toast({
-        title: "Access Denied",
-        description: err.response?.data?.message || "Invalid credentials",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      showErrorToast(toast, err, { title: "Access Denied" });
     } finally {
       setLoading(false);
     }
