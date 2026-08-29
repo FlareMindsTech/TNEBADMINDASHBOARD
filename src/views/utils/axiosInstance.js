@@ -1,13 +1,22 @@
-
-//axiosInstance.js
+// axiosInstance.js - Production-Ready Centralized API Client & Error Handler
 import axios from "axios";
+import {
+  AppError,
+  parseApiError,
+  showErrorToast,
+  sanitizeErrorMessage,
+  logApiError,
+} from "./errorHandler";
+
+// Re-export error utilities for convenient import across views
+export { AppError, parseApiError, showErrorToast, sanitizeErrorMessage, logApiError };
 
 // --- Configuration ---
 const API_BASE_URL = "https://tnebserver-u7qr.onrender.com";
 const BASE_URL = "https://tnebserver-u7qr.onrender.com/api";
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 15000;
 
-const getAuthHeaders = (isFormData = false) => {
+export const getAuthHeaders = (isFormData = false) => {
   const token = localStorage.getItem("token");
   const headers = {};
   if (!isFormData) {
@@ -20,7 +29,7 @@ const getAuthHeaders = (isFormData = false) => {
 };
 
 // =========================================================
-// 1. GENERAL USER AXIOS INSTANCE
+// 1. GENERAL USER & ADMIN AXIOS INSTANCES
 // =========================================================
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -28,165 +37,200 @@ const axiosInstance = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// =========================================================
-// 2️⃣ ADMIN / SUPER ADMIN AXIOS INSTANCE
-// =========================================================
 const adminAxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: TIMEOUT_MS,
   headers: { "Content-Type": "application/json" },
 });
 
-// =========================================================
-// 3️⃣ COMMON RESPONSE INTERCEPTOR (401 Unauthorized handler)
-// =========================================================
-const unauthorizedResponseHandler = (error) => {
-  if (error.response && error.response.status === 401) {
-    console.warn("⚠️ Unauthorized (401).");
+// Interceptor for Axios instances (attaches tokens & handles 401)
+const authRequestInterceptor = (config) => {
+  const token = localStorage.getItem("token");
+  if (token && !config.headers["Authorization"]) {
+    config.headers["Authorization"] = `Bearer ${token}`;
   }
-  return Promise.reject(error);
+  return config;
 };
 
-axiosInstance.interceptors.response.use(
-  (res) => res,
-  unauthorizedResponseHandler
-);
+const commonResponseInterceptor = (response) => response;
 
-adminAxiosInstance.interceptors.response.use(
-  (response) => response,
-  unauthorizedResponseHandler
-);
+const commonErrorInterceptor = (error) => {
+  const parsed = parseApiError(error);
+  if (parsed.isAuthError) {
+    console.warn("⚠️ Unauthorized session. Clearing token.");
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } catch (e) {}
+  }
+  logApiError(error.config?.url || "Axios Request", parsed);
+  return Promise.reject(parsed);
+};
 
-// =========================================================
-// 4. EXPORTS
-// =========================================================
+axiosInstance.interceptors.request.use(authRequestInterceptor);
+axiosInstance.interceptors.response.use(commonResponseInterceptor, commonErrorInterceptor);
+
+adminAxiosInstance.interceptors.request.use(authRequestInterceptor);
+adminAxiosInstance.interceptors.response.use(commonResponseInterceptor, commonErrorInterceptor);
+
 export default axiosInstance;
-export { adminAxiosInstance, BASE_URL };
+export { adminAxiosInstance, BASE_URL, API_BASE_URL };
 
 // =========================================================
-// 6. API CALL FUNCTIONS
+// 2. CENTRALIZED API REQUEST HELPER (FETCH-BASED)
+// =========================================================
+/**
+ * Core centralized request runner that handles timeouts, headers, JSON/FormData,
+ * response parsing, and unified error mapping through AppError.
+ */
+export const apiRequest = async (endpoint, options = {}) => {
+  const {
+    method = "GET",
+    body = null,
+    isFormData = false,
+    headers: customHeaders = {},
+    timeout = TIMEOUT_MS,
+    baseUrl = BASE_URL,
+  } = options;
+
+  const url = endpoint.startsWith("http://") || endpoint.startsWith("https://")
+    ? endpoint
+    : `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const authHeaders = getAuthHeaders(isFormData || body instanceof FormData);
+    const finalHeaders = {
+      ...authHeaders,
+      ...customHeaders,
+    };
+
+    const fetchConfig = {
+      method,
+      headers: finalHeaders,
+      signal: controller.signal,
+    };
+
+    if (body !== null && body !== undefined) {
+      if (body instanceof FormData || isFormData) {
+        fetchConfig.body = body;
+      } else if (typeof body === "object") {
+        fetchConfig.body = JSON.stringify(body);
+      } else {
+        fetchConfig.body = body;
+      }
+    }
+
+    const response = await fetch(url, fetchConfig);
+
+    clearTimeout(timeoutId);
+
+    // Parse JSON response body if available
+    let responseData = null;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json().catch(() => null);
+    } else {
+      const text = await response.text().catch(() => "");
+      try {
+        responseData = text ? JSON.parse(text) : null;
+      } catch (e) {
+        responseData = text;
+      }
+    }
+
+    if (!response.ok) {
+      const rawMessage =
+        responseData?.message ||
+        responseData?.error ||
+        responseData?.msg ||
+        (typeof responseData === "string" ? responseData : null);
+
+      const appError = parseApiError({
+        status: response.status,
+        message: rawMessage,
+        response: {
+          status: response.status,
+          data: typeof responseData === "object" ? responseData : { message: responseData },
+        },
+      });
+
+      logApiError(`${method} ${endpoint}`, appError);
+      throw appError;
+    }
+
+    return responseData;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    const parsedError = parseApiError(error);
+    logApiError(`${method} ${endpoint}`, parsedError);
+    throw parsedError;
+  }
+};
+
+// =========================================================
+// 3. CENTRALIZED API FUNCTIONS
 // =========================================================
 
 // ----- Events APIs -----
 export const getAllEvents = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/events`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    throw error;
-  }
+  return apiRequest("/events", { method: "GET" });
 };
 
 export const createEvent = async (eventData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/events`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: eventData, // Expecting FormData for file upload
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating event:", error);
-    throw error;
-  }
+  return apiRequest("/events", {
+    method: "POST",
+    body: eventData, // Expecting FormData for file upload
+    isFormData: true,
+  });
 };
 
 export const updateEvent = async (eventId, eventData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/events/${eventId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: eventData, // Expecting FormData
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating event:", error);
-    throw error;
-  }
+  return apiRequest(`/events/${eventId}`, {
+    method: "PUT",
+    body: eventData, // Expecting FormData
+    isFormData: true,
+  });
 };
 
 export const deleteEvent = async (eventId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/events/${eventId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting event:", error);
-    throw error;
-  }
+  return apiRequest(`/events/${eventId}`, {
+    method: "DELETE",
+  });
 };
 
 // ----- Carousel APIs -----
 export const getCarousel = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/carousel`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching carousel:", error);
-    throw error;
-  }
+  return apiRequest("/carousel", { method: "GET" });
 };
 
 export const createCarouselImage = async (carouselData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/carousel`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: carouselData, // Expecting FormData
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating carousel image:", error);
-    throw error;
-  }
+  return apiRequest("/carousel", {
+    method: "POST",
+    body: carouselData, // FormData
+    isFormData: true,
+  });
 };
 
 export const updateCarousel = async (id, carouselData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/carousel/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: carouselData, // Expecting FormData
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating carousel:", error);
-    throw error;
-  }
+  return apiRequest(`/carousel/${id}`, {
+    method: "PUT",
+    body: carouselData, // FormData
+    isFormData: true,
+  });
 };
 
 export const deleteCarousel = async (id) => {
-  try {
-    const response = await fetch(`${BASE_URL}/carousel/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting carousel:", error);
-    throw error;
-  }
+  return apiRequest(`/carousel/${id}`, {
+    method: "DELETE",
+  });
 };
 
 // ----- E-Minthiran APIs -----
 export const getAllMinthiran = async () => {
+<<<<<<< HEAD
   try {
     const response = await fetch(`${BASE_URL}/minthiran`, {
       method: "GET",
@@ -242,663 +286,357 @@ export const deleteMinthiran = async (id) => {
     console.error("Error deleting magazine:", error);
     throw error;
   }
+=======
+  return apiRequest("/minthiran", { method: "GET" });
+};
+
+export const createMinthiran = async (formData) => {
+  return apiRequest("/minthiran", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateMinthiran = async (id, formData) => {
+  return apiRequest(`/minthiran/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteMinthiran = async (id) => {
+  return apiRequest(`/minthiran/${id}`, {
+    method: "DELETE",
+  });
+>>>>>>> 469ae1c7c446b56f729a9ac27ea04ef6971f8429
 };
 
 // ----- Gallery APIs -----
 export const getAllGalleries = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/gallery`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching galleries:", error);
-    throw error;
-  }
+  return apiRequest("/gallery", { method: "GET" });
 };
 
 export const createGallery = async (formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/gallery`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: formData, // Expecting FormData
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating gallery:", error);
-    throw error;
-  }
+  return apiRequest("/gallery", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
 };
 
 export const updateGallery = async (id, formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: formData, // Expecting FormData
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating gallery:", error);
-    throw error;
-  }
+  return apiRequest(`/gallery/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
 };
 
 export const deleteGallery = async (id) => {
-  try {
-    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting gallery:", error);
-    throw error;
-  }
+  return apiRequest(`/gallery/${id}`, {
+    method: "DELETE",
+  });
 };
 
 export const getGalleryById = async (id) => {
-  try {
-    const response = await fetch(`${BASE_URL}/gallery/${id}`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching gallery by ID:", error);
-    throw error;
-  }
+  return apiRequest(`/gallery/${id}`, { method: "GET" });
 };
 
 export const deleteGalleryImage = async (galleryId, imageId) => {
-  const url = `${BASE_URL}/gallery/${galleryId}/image/${imageId}`;
-  try {
-    console.log("Calling delete URL:", url);
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting gallery image:", error);
-    throw error;
-  }
+  return apiRequest(`/gallery/${galleryId}/image/${imageId}`, {
+    method: "DELETE",
+  });
 };
 
 // ----- Admin APIs -----
 export const getAllAdmins = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/admins/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching admins:", error);
-    throw error;
-  }
+  return apiRequest("/admins/all", { method: "GET" });
 };
 
 export const createAdmin = async (adminData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/admins/create`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(adminData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating admin:", error);
-    throw error;
-  }
+  return apiRequest("/admins/create", {
+    method: "POST",
+    body: adminData,
+  });
 };
 
 export const updateAdmin = async (adminId, updatedData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/admins/update/${adminId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating admin:", error);
-    throw error;
-  }
+  return apiRequest(`/admins/update/${adminId}`, {
+    method: "PUT",
+    body: updatedData,
+  });
 };
 
 export const inActiveAdmin = async (adminId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/admins/delete/${adminId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting admin:", error);
-    throw error;
-  }
+  return apiRequest(`/admins/delete/${adminId}`, {
+    method: "DELETE",
+  });
 };
-
 
 // ----- Category APIs -----
 export const getAllCategories = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/categories/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    throw error;
-  }
+  return apiRequest("/categories/all", { method: "GET" });
 };
 
 export const createCategories = async (categoryData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/categories/create`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(categoryData),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating category:", error);
-    throw error;
-  }
+  return apiRequest("/categories/create", {
+    method: "POST",
+    body: categoryData,
+  });
 };
 
 export const updateCategories = async (categoryId, updatedData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/categories/update/${categoryId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating category:", error);
-    throw error;
-  }
+  return apiRequest(`/categories/update/${categoryId}`, {
+    method: "PUT",
+    body: updatedData,
+  });
 };
-
 
 export const deleteCategory = async (categoryId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/categories/delete/${categoryId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting category:", error);
-    throw error;
-  }
+  return apiRequest(`/categories/delete/${categoryId}`, {
+    method: "DELETE",
+  });
 };
-
 
 // ----- Product APIs -----
 export const getAllProducts = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/products/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw error;
-  }
+  return apiRequest("/products/all", { method: "GET" });
 };
 
 export const createProducts = async (productData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/products/create`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(productData),
-    });
-    if (!response.ok) {
-      let errorMessage = `Error: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch (e) {
-        const text = await response.text();
-        errorMessage = text || errorMessage;
-      }
-      throw new Error(errorMessage);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  return apiRequest("/products/create", {
+    method: "POST",
+    body: productData,
+  });
 };
 
 export const uploadImage = async (file) => {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch(`${BASE_URL}/products/upload`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: formData,
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Error uploading image, backend response:", text);
-      throw new Error("Image upload failed");
-    }
-    const data = await res.json();
-    return data.url;
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    throw error;
-  }
+  const formData = new FormData();
+  formData.append("file", file);
+  const data = await apiRequest("/products/upload", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+  return data?.url || data;
 };
 
 export const updateProducts = async (productId, updatedData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/products/update/${productId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating product:", error);
-    throw error;
-  }
+  return apiRequest(`/products/update/${productId}`, {
+    method: "PUT",
+    body: updatedData,
+  });
 };
 
 export const deleteProducts = async (productId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/products/delete/${productId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting product:", error);
-    throw error;
-  }
+  return apiRequest(`/products/delete/${productId}`, {
+    method: "DELETE",
+  });
+};
+
+export const uploadProductImage = async (productId, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("productId", productId);
+  return apiRequest("/products/upload", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteProductImage = async (productId, public_id) => {
+  return apiRequest("/products/delete-image", {
+    method: "POST",
+    body: { productId, public_id },
+  });
 };
 
 // ----- User APIs -----
 export const getAllUsers = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/users/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    throw error;
-  }
+  return apiRequest("/users/all", { method: "GET" });
 };
 
 export const createUser = async (userData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/users/register`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating user:", error);
-    throw error;
-  }
+  return apiRequest("/users/register", {
+    method: "POST",
+    body: userData,
+  });
 };
 
 export const updateUser = async (userId, updatedData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/users/update/${userId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating user:", error);
-    throw error;
-  }
+  return apiRequest(`/users/update/${userId}`, {
+    method: "PUT",
+    body: updatedData,
+  });
 };
 
 export const deleteUser = async (userId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/users/delete/${userId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    throw error;
-  }
+  return apiRequest(`/users/delete/${userId}`, {
+    method: "DELETE",
+  });
 };
 
-
+// ----- Orders APIs -----
 export const getAllOrders = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/orders/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching Orders:", error);
-    throw error;
-  }
+  return apiRequest("/orders/all", { method: "GET" });
 };
 
-export const createOrders = async (categoryData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/Orders/create`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(categoryData),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating category:", error);
-    throw error;
-  }
+export const createOrders = async (orderData) => {
+  return apiRequest("/Orders/create", {
+    method: "POST",
+    body: orderData,
+  });
 };
 
 export const updateOrders = async (orderId, updatedData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/orders/update/${orderId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updatedData),
-    });
-    if (!response.ok) {
-      let errorMessage = `Error updating order: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch (e) {
-      }
-      throw new Error(errorMessage);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating order:", error);
-    throw error;
-  }
+  return apiRequest(`/orders/update/${orderId}`, {
+    method: "PUT",
+    body: updatedData,
+  });
 };
 
-
-// Upload Product Image with productId
-export const uploadProductImage = async (productId, file) => {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("productId", productId);
-    const res = await fetch(`${BASE_URL}/products/upload`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: formData,
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Upload failed response:", errorText);
-      throw new Error(`Image upload failed: ${res.status} ${res.statusText}`);
-    }
-    return await res.json();
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    throw error;
-  }
-};
-
-// Delete Product Image
-export const deleteProductImage = async (productId, public_id) => {
-  try {
-    const response = await fetch(`${BASE_URL}/products/delete-image`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ productId, public_id }),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting image:", error);
-    throw error;
-  }
-};
-
-
-// offer details api 
-export const createOffer = async (offerData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/offers/create`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(offerData),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating offer:", error);
-    throw error;
-  }
-};
-
+// ----- Offers APIs -----
 export const getAllOffers = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/offers/all`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching offers:", error);
-    throw error;
-  }
+  return apiRequest("/offers/all", { method: "GET" });
+};
+
+export const createOffer = async (offerData) => {
+  return apiRequest("/offers/create", {
+    method: "POST",
+    body: offerData,
+  });
 };
 
 export const updateOffer = async (offerId, offerData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/offers/update/${offerId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(offerData),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating offer:", error);
-    throw error;
-  }
+  return apiRequest(`/offers/update/${offerId}`, {
+    method: "PUT",
+    body: offerData,
+  });
 };
 
 export const deleteOffer = async (offerId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/offers/delete/${offerId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Error: ${response.status}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting offer:", error);
-    throw error;
-  }
+  return apiRequest(`/offers/delete/${offerId}`, {
+    method: "DELETE",
+  });
 };
+
 // ----- Forms APIs -----
 export const getAllForms = async (type = "") => {
-  try {
-    const url = type ? `${BASE_URL}/forms?type=${type}` : `${BASE_URL}/forms`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching forms:", error);
-    throw error;
-  }
+  const endpoint = type ? `/forms?type=${encodeURIComponent(type)}` : "/forms";
+  return apiRequest(endpoint, { method: "GET" });
 };
 
 export const createForm = async (formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/forms`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: formData,
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating form:", error);
-    throw error;
-  }
+  return apiRequest("/forms", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
 };
 
 export const updateForm = async (formId, formData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/forms/${formId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: formData,
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating form:", error);
-    throw error;
-  }
+  return apiRequest(`/forms/${formId}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
 };
 
 export const deleteForm = async (formId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/forms/${formId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting form:", error);
-    throw error;
-  }
+  return apiRequest(`/forms/${formId}`, {
+    method: "DELETE",
+  });
 };
 
 // ----- Important Notice APIs -----
 export const getAllNotices = async (type = "") => {
-  try {
-    const url = type ? `${BASE_URL}/important-notices?Type=${type}` : `${BASE_URL}/important-notices`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching notices:", error);
-    throw error;
-  }
+  const endpoint = type ? `/important-notices?Type=${encodeURIComponent(type)}` : "/important-notices";
+  return apiRequest(endpoint, { method: "GET" });
 };
 
 export const createNotice = async (noticeData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/important-notices`, {
-      method: "POST",
-      headers: getAuthHeaders(true),
-      body: noticeData,
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating notice:", error);
-    throw error;
-  }
+  return apiRequest("/important-notices", {
+    method: "POST",
+    body: noticeData,
+    isFormData: true,
+  });
 };
 
 export const updateNotice = async (noticeId, noticeData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/important-notices/${noticeId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: noticeData,
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error updating notice:", error);
-    throw error;
-  }
+  return apiRequest(`/important-notices/${noticeId}`, {
+    method: "PUT",
+    body: noticeData,
+    isFormData: true,
+  });
 };
 
 export const deleteNotice = async (noticeId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/important-notices/${noticeId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error deleting notice:", error);
-    throw error;
-  }
+  return apiRequest(`/important-notices/${noticeId}`, {
+    method: "DELETE",
+  });
+};
+
+// ----- Committee APIs (Admin) -----
+export const getCommitteeMembers = async (type = "CEC") => {
+  return apiRequest(`/admin/committees/${type}/members`, { method: "GET" });
+};
+
+export const createCommitteeMember = async (type = "CEC", memberData) => {
+  return apiRequest(`/admin/committees/${type}/members`, {
+    method: "POST",
+    body: memberData,
+    isFormData: true,
+  });
+};
+
+export const updateCommitteeMember = async (type = "CEC", memberId, memberData) => {
+  return apiRequest(`/admin/committees/${type}/members/${memberId}`, {
+    method: "PUT",
+    body: memberData,
+    isFormData: true,
+  });
+};
+
+export const deleteCommitteeMember = async (type = "CEC", memberId) => {
+  return apiRequest(`/admin/committees/${type}/members/${memberId}`, {
+    method: "DELETE",
+  });
+};
+
+export const getCommitteeTerm = async (type = "CEC") => {
+  return apiRequest(`/admin/committees/${type}/term`, { method: "GET" });
+};
+
+export const updateCommitteeTerm = async (type = "CEC", termData) => {
+  return apiRequest(`/admin/committees/${type}/term`, {
+    method: "PUT",
+    body: termData,
+  });
+};
+
+export const getCommitteeResponsibilities = async (type = "CEC") => {
+  return apiRequest(`/admin/committees/${type}/responsibilities`, { method: "GET" });
+};
+
+export const createCommitteeResponsibility = async (type = "CEC", respData) => {
+  return apiRequest(`/admin/committees/${type}/responsibilities`, {
+    method: "POST",
+    body: respData,
+  });
+};
+
+export const updateCommitteeResponsibility = async (type = "CEC", respId, respData) => {
+  return apiRequest(`/admin/committees/${type}/responsibilities/${respId}`, {
+    method: "PUT",
+    body: respData,
+  });
+};
+
+export const deleteCommitteeResponsibility = async (type = "CEC", respId) => {
+  return apiRequest(`/admin/committees/${type}/responsibilities/${respId}`, {
+    method: "DELETE",
+  });
 };

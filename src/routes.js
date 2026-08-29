@@ -6,7 +6,7 @@ import Profile from "views/Dashboard/Profile.js";
 import SignIn from "views/Pages/SignIn.js";
 import AdminManagement from "views/Dashboard/AdminManagement.js";
 import UserManagement from "views/Dashboard/UserManagement.js";
-import { MdLogout } from "react-icons/md";
+import ProductManagement from "views/Dashboard/ProductManagement";
 
 import {
   HomeIcon,
@@ -15,12 +15,7 @@ import {
   DocumentIcon,
   GlobeIcon,
   RocketIcon,
-
-
 } from "components/Icons/Icons";
-
-import ProductManagement from "views/Dashboard/ProductManagement";
-
 
 import EMinthiran from "views/Dashboard/EMinthiran.js";
 import Carousel from "views/Dashboard/Carousel.js";
@@ -30,17 +25,7 @@ import ImportantNotice from "views/Dashboard/ImportantNotice.js";
 import BoardProceedings from "views/Dashboard/BoardProceedings.js";
 import { FaFileAlt, FaBullhorn, FaClipboardList } from "react-icons/fa";
 
-
 const ICON_COLOR = "#0A3D91";
-
-// ✅ Added: Logout component
-const Logout = () => {
-  localStorage.clear();
-  sessionStorage.clear();
-  const base = window.location.origin + window.location.pathname;
-  window.location.replace(`${base}#/auth/signin`);
-  return <div>Logging out...</div>;
-};
 
 
 
@@ -137,19 +122,10 @@ var dashRoutes = [
   },
   {
     path: "/signin",
-    name: "Logout",
+    name: "Sign In",
     rtlName: "تسجيل الدخول",
-    icon: <MdLogout color={ICON_COLOR} />,
     element: <SignIn />,
     layout: "/auth",
-  },
-  {
-    path: "/logout",
-    name: "Logout",
-    rtlName: "تسجيل الخروج",
-    icon: <MdLogout color={ICON_COLOR} />,
-    element: <Logout />,
-    layout: "/admin",
   },
 ];
 

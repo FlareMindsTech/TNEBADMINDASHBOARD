@@ -60,6 +60,7 @@ import {
   createUser,
   deleteUser,
   getAllOrders,
+  showErrorToast
 } from "views/utils/axiosInstance";
 
 // Main User Management Component
@@ -211,17 +212,9 @@ function UserManagement() {
         setFilteredData(usersWithOrders);
         setDataLoaded(true);
       } catch (err) {
-        console.error("Error fetching users:", err);
-        const errorMessage = err.response?.data?.message || err.message || "Failed to load user list.";
-        setError(errorMessage);
+        const appErr = showErrorToast(toast, err, { title: "Failed to load users" });
+        setError(appErr.message);
         setDataLoaded(true);
-        toast({
-          title: "Fetch Error",
-          description: errorMessage,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
       } finally {
         setLoading(false);
         setTableLoading(false);
@@ -409,15 +402,7 @@ function UserManagement() {
       await fetchUsers();
 
     } catch (err) {
-      console.error("Error deleting user:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Failed to delete user.";
-      toast({
-        title: "Delete Error",
-        description: errorMessage,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      showErrorToast(toast, err, { title: "Delete Failed" });
     } finally {
       setDeleteLoading(false);
       setIsDeleteDialogOpen(false);
@@ -521,11 +506,6 @@ function UserManagement() {
         successMessage = `User ${response.data?.firstName || formData.firstName} created successfully`;
       }
 
-      console.log("User operation response:", response);
-
-      // Extract user data from response
-      const userResponse = response.data || response;
-
       toast({
         title: currentView === "edit" ? "User Updated" : "User Created",
         description: successMessage,
@@ -604,17 +584,8 @@ function UserManagement() {
       setCurrentView("list");
 
     } catch (err) {
-      console.error("API Error:", err);
-      const errorMessage =
-        err.response?.data?.message || err.message || "API error. Try again.";
-      setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      const appErr = showErrorToast(toast, err);
+      setError(appErr.message);
     }
     setLoading(false);
   };

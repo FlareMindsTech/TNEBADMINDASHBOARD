@@ -51,7 +51,8 @@ import {
     getAllForms,
     createForm,
     updateForm,
-    deleteForm
+    deleteForm,
+    showErrorToast
 } from "views/utils/axiosInstance";
 
 function Forms() {
@@ -67,7 +68,7 @@ function Forms() {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
 
     // Delete modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -107,15 +108,20 @@ function Forms() {
         try {
             const data = await getAllForms();
             let formsList = Array.isArray(data) ? data : [];
-            setForms([...formsList].reverse());
-        } catch (error) {
-            toast({
-                title: "Error fetching forms",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-                isClosable: true,
+
+            // Sort descending (newest first)
+            const sortedForms = [...formsList].sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.date || a.updatedAt || 0).getTime();
+                const dateB = new Date(b.createdAt || b.date || b.updatedAt || 0).getTime();
+                if (dateA && dateB && dateA !== dateB && !isNaN(dateA) && !isNaN(dateB)) {
+                    return dateB - dateA;
+                }
+                return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
             });
+
+            setForms(sortedForms);
+        } catch (error) {
+            showErrorToast(toast, error, { title: "Failed to load forms" });
         } finally {
             setLoading(false);
         }
@@ -174,12 +180,7 @@ function Forms() {
             fetchForms();
             handleBackToList();
         } catch (error) {
-            toast({
-                title: "Operation failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error);
         } finally {
             setLoading(false);
         }
@@ -205,12 +206,7 @@ function Forms() {
             fetchForms();
             closeDeleteModal();
         } catch (error) {
-            toast({
-                title: "Delete failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error, { title: "Delete Failed" });
         } finally {
             setIsDeleting(false);
         }
@@ -265,16 +261,16 @@ function Forms() {
     }
 
     const renderStats = () => (
-        <Flex flexDirection={{ base: "column", md: "row" }} gap={4} mb={4}>
-            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "32%", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
+        <Flex flexDirection={{ base: "column", sm: "row" }} gap={4} mb={4} w="100%">
+            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "100%", sm: "240px", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
                 <CardBody>
                     <Flex align="center" justify="space-between">
                         <Stat>
                             <StatLabel color="gray.600" fontWeight="bold">Total Documents</StatLabel>
                             <StatNumber fontSize="xl">{forms.length}</StatNumber>
                         </Stat>
-                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px">
-                            <Icon as={FaFileAlt} w="24px" h="24px" />
+                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px" flexShrink={0}>
+                            <Icon as={FaFileAlt} w="22px" h="22px" />
                         </Flex>
                     </Flex>
                 </CardBody>
@@ -283,72 +279,118 @@ function Forms() {
     );
 
     return (
-        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }}>
+        <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} h="calc(100vh - 20px)">
             {renderStats()}
-            <Card overflowX={{ sm: "scroll", xl: "hidden" }}>
-                <CardHeader p="6px 0px 22px 0px">
-                    <Flex justify="space-between" align="center" w="100%">
-                        <Text fontSize="xl" color={textColor} fontWeight="bold">Forms / Loans Table</Text>
-                        <Button bg={customColor} color="white" _hover={{ bg: customHoverColor }} onClick={handleAddForm} leftIcon={<FaPlus />}>
-                            Add Form / Loan
+            <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
+                <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
+                    <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
+                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Forms / Loans Table</Text>
+                        <Button
+                            bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
+                            color="white"
+                            px={{ base: "20px", md: "24px" }}
+                            py="10px"
+                            minH="42px"
+                            minW="fit-content"
+                            borderRadius="10px"
+                            boxShadow="0 4px 12px rgba(10, 61, 145, 0.25)"
+                            _hover={{
+                                bg: "linear-gradient(135deg, #083075 0%, #0A3D91 100%)",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 6px 18px rgba(10, 61, 145, 0.35)",
+                            }}
+                            _active={{
+                                transform: "translateY(0)",
+                                boxShadow: "0 2px 6px rgba(10, 61, 145, 0.2)",
+                            }}
+                            transition="all 0.2s ease"
+                            onClick={handleAddForm}
+                        >
+                            <Flex align="center" gap="8px">
+                                <Icon as={FaPlus} boxSize="13px" />
+                                <Text fontSize="sm" fontWeight="600" letterSpacing="0.2px">
+                                    Add Form / Loan
+                                </Text>
+                            </Flex>
                         </Button>
                     </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden" p={0}>
                     {loading && forms.length === 0 ? (
-                        <Flex justify="center" p={8}><Spinner color={customColor} /></Flex>
+                        <Flex justify="center" align="center" flex="1" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
-                        <Table variant="simple" color={textColor}>
-                            <Thead>
-                                <Tr my=".8rem" pl="0px" color="gray.400">
-                                    <Th color="gray.400">S.No</Th>
-                                    <Th color="gray.400">Title</Th>
-                                    <Th color="gray.400">Type</Th>
-                                    <Th color="gray.400">Created Date</Th>
-                                    <Th color="gray.400" textAlign="center">Actions</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {currentForms.map((form, index) => (
-                                    <Tr key={form._id}>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                        <Td><Text fontSize="md" color={textColor} fontWeight="bold">{form.title}</Text></Td>
-                                        <Td>
-                                            <Badge colorScheme={form.type === 'loan' ? 'green' : 'blue'}>
-                                                {form.type ? form.type.toUpperCase() : "FORM"}
-                                            </Badge>
-                                        </Td>
-                                        <Td><Text fontSize="md" color={textColor} whiteSpace="nowrap">{form.createdAt ? form.createdAt.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
-                                        <Td textAlign="center">
-                                            <Flex justify="center">
-                                                {form.pdfUrl && (
-                                                    <Button as="a" href={form.pdfUrl} target="_blank" variant="ghost" colorScheme="orange" mr={2}>
-                                                        <Icon as={FaFilePdf} />
-                                                    </Button>
-                                                )}
-                                                <Button variant="ghost" colorScheme="blue" mr={2} onClick={() => handleEditForm(form)}><Icon as={FaEdit} /></Button>
-                                                <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(form._id)}><Icon as={FaTrash} /></Button>
-                                            </Flex>
-                                        </Td>
+                        <Box overflowY="auto" overflowX="auto" flex="1" px={{ base: 2, md: 4 }}>
+                            <Table variant="simple" color={textColor} minW={{ base: "550px", md: "100%" }}>
+                                <Thead>
+                                    <Tr my=".8rem" pl="0px" color="gray.400">
+                                        <Th color="gray.400">S.No</Th>
+                                        <Th color="gray.400">Title</Th>
+                                        <Th color="gray.400">Type</Th>
+                                        <Th color="gray.400">Created Date</Th>
+                                        <Th color="gray.400" textAlign="center">Actions</Th>
                                     </Tr>
-                                ))}
-                                {forms.length === 0 && (
-                                    <Tr>
-                                        <Td colSpan={5} textAlign="center" py={4}>No forms or loans found.</Td>
-                                    </Tr>
-                                )}
-                            </Tbody>
-                        </Table>
+                                </Thead>
+                                <Tbody>
+                                    {currentForms.map((form, index) => (
+                                        <Tr key={form._id}>
+                                            <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
+                                            <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{form.title}</Text></Td>
+                                            <Td>
+                                                <Badge colorScheme={form.type === 'loan' ? 'green' : 'blue'}>
+                                                    {form.type ? form.type.toUpperCase() : "FORM"}
+                                                </Badge>
+                                            </Td>
+                                            <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{form.createdAt ? form.createdAt.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
+                                            <Td textAlign="center">
+                                                <Flex justify="center">
+                                                    {form.pdfUrl && (
+                                                        <Button as="a" href={form.pdfUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
+                                                            <Icon as={FaFilePdf} />
+                                                        </Button>
+                                                    )}
+                                                    <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditForm(form)}><Icon as={FaEdit} /></Button>
+                                                    <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(form._id)}><Icon as={FaTrash} /></Button>
+                                                </Flex>
+                                            </Td>
+                                        </Tr>
+                                    ))}
+                                    {forms.length === 0 && (
+                                        <Tr>
+                                            <Td colSpan={5} textAlign="center" py={4}>No forms or loans found.</Td>
+                                        </Tr>
+                                    )}
+                                </Tbody>
+                            </Table>
+                        </Box>
                     )}
                     {forms.length > 0 && (
-                        <Box flexShrink={0} p="16px" borderTop="1px solid" borderColor={`${customColor}20`} bg="transparent">
-                            <Flex justify="flex-end" align="center" gap={3}>
-                                <Text fontSize="sm" color="gray.600" display={{ base: "none", sm: "block" }}>
-                                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, forms.length)} of {forms.length} entries
-                                </Text>
-                                <Flex align="center" gap={2}>
+                        <Box flexShrink={0} px={{ base: "12px", md: "20px" }} py="10px" borderTop="1px solid" borderColor="gray.100" bg="white">
+                            <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={2}>
+                                <Flex align="center" justify={{ base: "space-between", sm: "flex-start" }} w={{ base: "100%", sm: "auto" }}>
+                                    <Flex align="center">
+                                        <Text fontSize="xs" mr={1} color="gray.500" whiteSpace="nowrap">Rows:</Text>
+                                        <Select
+                                            w="65px"
+                                            size="xs"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                        >
+                                            <option value={5}>5</option>
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                        </Select>
+                                    </Flex>
+                                    <Text fontSize="xs" color="gray.600" ml={3} whiteSpace="nowrap">
+                                        Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, forms.length)} of {forms.length}
+                                    </Text>
+                                </Flex>
+
+                                <Flex align="center" justify={{ base: "center", sm: "flex-end" }} w={{ base: "100%", sm: "auto" }} gap={1}>
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         onClick={handlePrevPage}
                                         isDisabled={currentPage === 1}
                                         leftIcon={<FaChevronLeft />}
@@ -365,15 +407,13 @@ function Forms() {
                                             borderColor: "gray.300"
                                         }}
                                     >
-                                        <Text display={{ base: "none", sm: "block" }}>Previous</Text>
+                                        Previous
                                     </Button>
-                                    <Flex align="center" gap={2} bg={`${customColor}10`} px={3} py={1} borderRadius="6px" minW="80px" justify="center">
-                                        <Text fontSize="sm" fontWeight="bold" color={customColor}>{currentPage}</Text>
-                                        <Text fontSize="sm" color="gray.500">/</Text>
-                                        <Text fontSize="sm" color="gray.600" fontWeight="medium">{totalPages}</Text>
-                                    </Flex>
+                                    <Text fontSize="xs" mx={2} color="gray.600" whiteSpace="nowrap">
+                                        Page {currentPage} of {totalPages}
+                                    </Text>
                                     <Button
-                                        size="sm"
+                                        size="xs"
                                         onClick={handleNextPage}
                                         isDisabled={currentPage === totalPages}
                                         rightIcon={<FaChevronRight />}
@@ -390,7 +430,7 @@ function Forms() {
                                             borderColor: "gray.300"
                                         }}
                                     >
-                                        <Text display={{ base: "none", sm: "block" }}>Next</Text>
+                                        Next
                                     </Button>
                                 </Flex>
                             </Flex>

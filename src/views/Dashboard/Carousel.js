@@ -52,7 +52,8 @@ import {
     getCarousel,
     createCarouselImage,
     updateCarousel,
-    deleteCarousel
+    deleteCarousel,
+    showErrorToast
 } from "views/utils/axiosInstance";
 
 function Carousel() {
@@ -88,14 +89,20 @@ function Carousel() {
         try {
             const data = await getCarousel();
             const list = Array.isArray(data) ? data : data.carousel || [];
-            setSlides([...list].reverse());
-        } catch (error) {
-            toast({
-                title: "Error fetching carousel",
-                description: error.message,
-                status: "error",
-                duration: 3000,
+
+            // Sort descending (latest/newest slides first)
+            const sortedSlides = [...list].sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.date || a.updatedAt || 0).getTime();
+                const dateB = new Date(b.createdAt || b.date || b.updatedAt || 0).getTime();
+                if (dateA && dateB && dateA !== dateB && !isNaN(dateA) && !isNaN(dateB)) {
+                    return dateB - dateA;
+                }
+                return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
             });
+
+            setSlides(sortedSlides);
+        } catch (error) {
+            showErrorToast(toast, error, { title: "Failed to load carousel" });
         } finally {
             setLoading(false);
         }
@@ -158,12 +165,7 @@ function Carousel() {
             fetchSlides();
             handleBackToList();
         } catch (error) {
-            toast({
-                title: "Operation failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error);
         } finally {
             setLoading(false);
         }
@@ -190,12 +192,7 @@ function Carousel() {
             fetchSlides();
             closeDeleteModal();
         } catch (error) {
-            toast({
-                title: "Delete failed",
-                description: error.message,
-                status: "error",
-                duration: 3000,
-            });
+            showErrorToast(toast, error, { title: "Delete Failed" });
         } finally {
             setIsDeleting(false);
         }
@@ -254,16 +251,16 @@ function Carousel() {
     }
 
     const renderStats = () => (
-        <Flex flexDirection={{ base: "column", md: "row" }} gap={4} mb={4}>
-            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "32%", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
+        <Flex flexDirection={{ base: "column", sm: "row" }} gap={4} mb={4} w="100%">
+            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "100%", sm: "240px", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
                 <CardBody>
                     <Flex align="center" justify="space-between">
                         <Stat>
-                            <StatLabel color="gray.600" fontWeight="bold">Total Images</StatLabel>
+                            <StatLabel color="gray.600" fontWeight="bold">Total Slides</StatLabel>
                             <StatNumber fontSize="xl">{slides.length}</StatNumber>
                         </Stat>
-                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px">
-                            <Icon as={FaImages} w="24px" h="24px" />
+                        <Flex alignItems="center" justifyContent="center" borderRadius="12px" bg={customColor} color="white" h="45px" w="45px" flexShrink={0}>
+                            <Icon as={FaImages} w="22px" h="22px" />
                         </Flex>
                     </Flex>
                 </CardBody>
@@ -275,20 +272,45 @@ function Carousel() {
         <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} h="calc(100vh - 20px)">
             {renderStats()}
             <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
-                <CardHeader p="6px 0px 22px 0px">
-                    <Flex justify="space-between" align="center" w="100%">
-                        <Text fontSize="xl" color={textColor} fontWeight="bold">Carousel Table</Text>
-                        <Button bg={customColor} color="white" _hover={{ bg: customHoverColor }} onClick={handleAddSlide} leftIcon={<FaPlus />}>
-                            Add Slide
+                <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
+                    <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
+                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Carousel Table</Text>
+                        <Button
+                            bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
+                            color="white"
+                            px={{ base: "20px", md: "24px" }}
+                            py="10px"
+                            minH="42px"
+                            minW="fit-content"
+                            borderRadius="10px"
+                            boxShadow="0 4px 12px rgba(10, 61, 145, 0.25)"
+                            _hover={{
+                                bg: "linear-gradient(135deg, #083075 0%, #0A3D91 100%)",
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 6px 18px rgba(10, 61, 145, 0.35)",
+                            }}
+                            _active={{
+                                transform: "translateY(0)",
+                                boxShadow: "0 2px 6px rgba(10, 61, 145, 0.2)",
+                            }}
+                            transition="all 0.2s ease"
+                            onClick={handleAddSlide}
+                        >
+                            <Flex align="center" gap="8px">
+                                <Icon as={FaPlus} boxSize="13px" />
+                                <Text fontSize="sm" fontWeight="600" letterSpacing="0.2px">
+                                    Add Slide
+                                </Text>
+                            </Flex>
                         </Button>
                     </Flex>
                 </CardHeader>
-                <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden">
+                <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden" p={0}>
                     {loading && slides.length === 0 ? (
-                        <Flex justify="center" p={8}><Spinner color={customColor} /></Flex>
+                        <Flex justify="center" align="center" flex="1" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
-                        <Box overflowY="auto" flex="1">
-                            <Table variant="simple" color={textColor}>
+                        <Box overflowY="auto" overflowX="auto" flex="1" px={{ base: 2, md: 4 }}>
+                            <Table variant="simple" color={textColor} minW={{ base: "550px", md: "100%" }}>
                                 <Thead>
                                     <Tr my=".8rem" pl="0px" color="gray.400">
                                         <Th color="gray.400">S.No</Th>
@@ -302,16 +324,16 @@ function Carousel() {
                                         .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                                         .map((slide, index) => (
                                             <Tr key={slide._id || slide.id}>
-                                                <Td><Text fontSize="md" color={textColor} fontWeight="bold">{(currentPage - 1) * itemsPerPage + index + 1}</Text></Td>
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{(currentPage - 1) * itemsPerPage + index + 1}</Text></Td>
                                                 <Td>
                                                     <Image src={slide.imageUrl || slide.url} alt={slide.title} w="80px" h="50px" objectFit="cover" borderRadius="md" fallbackSrc="https://via.placeholder.com/80x50" />
                                                 </Td>
                                                 <Td>
-                                                    <Text fontSize="md" color={textColor}>{slide.subtitle || "-"}</Text>
+                                                    <Text fontSize="sm" color={textColor}>{slide.subtitle || "-"}</Text>
                                                 </Td>
                                                 <Td textAlign="center">
                                                     <Flex justify="center">
-                                                        <Button variant="ghost" colorScheme="red" onClick={() => openDeleteModal(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
+                                                        <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(slide._id || slide.id)}><Icon as={FaTrash} /></Button>
                                                     </Flex>
                                                 </Td>
                                             </Tr>
@@ -325,49 +347,77 @@ function Carousel() {
                             </Table>
                         </Box>
                     )}
-                    {/* Pagination Controls */}
-                    {/* Pagination Controls */}
+                    {/* Fixed Pagination Controls */}
                     {slides.length > 0 && (
-                        <Flex justify="space-between" mt={4} align="center" wrap="wrap">
-                            <Flex align="center">
-                                <Text fontSize="sm" mr={2} color="gray.500">Rows per page:</Text>
-                                <Select
-                                    w="70px"
-                                    size="sm"
-                                    value={itemsPerPage}
-                                    onChange={(e) => {
-                                        setItemsPerPage(Number(e.target.value));
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                </Select>
-                            </Flex>
+                        <Box flexShrink={0} px={{ base: "12px", md: "20px" }} py="10px" borderTop="1px solid" borderColor="gray.100" bg="white">
+                            <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={2}>
+                                <Flex align="center" justify={{ base: "space-between", sm: "flex-start" }} w={{ base: "100%", sm: "auto" }}>
+                                    <Flex align="center">
+                                        <Text fontSize="xs" mr={1} color="gray.500" whiteSpace="nowrap">Rows:</Text>
+                                        <Select
+                                            w="65px"
+                                            size="xs"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                        >
+                                            <option value={5}>5</option>
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                        </Select>
+                                    </Flex>
+                                    <Text fontSize="xs" color="gray.600" ml={3} whiteSpace="nowrap">
+                                        Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, slides.length)} of {slides.length}
+                                    </Text>
+                                </Flex>
 
-                            <Flex align="center">
-                                <Button
-                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                                    isDisabled={currentPage === 1}
-                                    mr={2}
-                                    size="sm"
-                                >
-                                    Previous
-                                </Button>
-                                <Text fontSize="sm" mx={2}>
-                                    Page {currentPage} of {Math.ceil(slides.length / itemsPerPage)}
-                                </Text>
-                                <Button
-                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(slides.length / itemsPerPage)))}
-                                    isDisabled={currentPage === Math.ceil(slides.length / itemsPerPage)}
-                                    ml={2}
-                                    size="sm"
-                                >
-                                    Next
-                                </Button>
+                                <Flex align="center" justify={{ base: "center", sm: "flex-end" }} w={{ base: "100%", sm: "auto" }} gap={1}>
+                                    <Button
+                                        size="xs"
+                                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                        isDisabled={currentPage === 1}
+                                        bg="white"
+                                        color={customColor}
+                                        border="1px"
+                                        borderColor={customColor}
+                                        _hover={{ bg: customColor, color: "white" }}
+                                        _disabled={{
+                                            opacity: 0.5,
+                                            cursor: "not-allowed",
+                                            bg: "gray.100",
+                                            color: "gray.400",
+                                            borderColor: "gray.300"
+                                        }}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Text fontSize="xs" mx={2} color="gray.600" whiteSpace="nowrap">
+                                        Page {currentPage} of {Math.ceil(slides.length / itemsPerPage)}
+                                    </Text>
+                                    <Button
+                                        size="xs"
+                                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(slides.length / itemsPerPage)))}
+                                        isDisabled={currentPage === Math.ceil(slides.length / itemsPerPage)}
+                                        bg="white"
+                                        color={customColor}
+                                        border="1px"
+                                        borderColor={customColor}
+                                        _hover={{ bg: customColor, color: "white" }}
+                                        _disabled={{
+                                            opacity: 0.5,
+                                            cursor: "not-allowed",
+                                            bg: "gray.100",
+                                            color: "gray.400",
+                                            borderColor: "gray.300"
+                                        }}
+                                    >
+                                        Next
+                                    </Button>
+                                </Flex>
                             </Flex>
-                        </Flex>
+                        </Box>
                     )}
                 </CardBody>
             </Card>
