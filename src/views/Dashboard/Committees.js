@@ -135,7 +135,7 @@ function Committees() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilterStatus, setMemberFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25); // Default 25 for great scrolling UX
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Default 10 for clean paginated display
 
   // Member Modal
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -886,12 +886,14 @@ function Committees() {
                 </Flex>
               ) : (
                 <Box
-                  maxH="560px"
+                  maxH={{ base: "450px", md: "520px", lg: "580px" }}
                   overflowY="auto"
                   overflowX="auto"
-                  borderRadius="10px"
+                  borderRadius="12px"
                   border="1px solid"
                   borderColor={tableBorder}
+                  bg={cardBg}
+                  boxShadow="0 2px 8px rgba(0, 0, 0, 0.04)"
                   css={{
                     "&::-webkit-scrollbar": { width: "6px", height: "6px" },
                     "&::-webkit-scrollbar-track": { background: "rgba(0, 0, 0, 0.05)" },
@@ -907,24 +909,24 @@ function Committees() {
                       boxShadow="0 2px 4px rgba(0, 0, 0, 0.06)"
                     >
                       <Tr>
-                        <Th py="8px" px="10px" fontSize="11px" width="55px" bg={theadBg}>Order</Th>
-                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Member</Th>
-                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Post / Position</Th>
-                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Designation</Th>
-                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>{committeeType === "REGIONAL" ? "Region" : committeeType === "BRANCH" ? "Branch" : "Region / Branch"}</Th>
-                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Contact</Th>
-                        <Th py="8px" px="10px" fontSize="11px" textAlign="center" bg={theadBg}>Query Contact</Th>
-                        <Th py="8px" px="10px" fontSize="11px" textAlign="center" bg={theadBg}>Status</Th>
-                        <Th py="8px" px="10px" fontSize="11px" textAlign="right" bg={theadBg}>Actions</Th>
+                        <Th py="10px" px="12px" fontSize="11px" width="55px" bg={theadBg} color={textColor}>Order</Th>
+                        <Th py="10px" px="12px" fontSize="11px" bg={theadBg} color={textColor}>Member</Th>
+                        <Th py="10px" px="12px" fontSize="11px" bg={theadBg} color={textColor}>Post / Position</Th>
+                        <Th py="10px" px="12px" fontSize="11px" bg={theadBg} color={textColor}>Designation</Th>
+                        <Th py="10px" px="12px" fontSize="11px" bg={theadBg} color={textColor}>{committeeType === "REGIONAL" ? "Region" : committeeType === "BRANCH" ? "Branch" : "Region / Branch"}</Th>
+                        <Th py="10px" px="12px" fontSize="11px" bg={theadBg} color={textColor}>Contact</Th>
+                        <Th py="10px" px="12px" fontSize="11px" textAlign="center" bg={theadBg} color={textColor}>Query Contact</Th>
+                        <Th py="10px" px="12px" fontSize="11px" textAlign="center" bg={theadBg} color={textColor}>Status</Th>
+                        <Th py="10px" px="12px" fontSize="11px" textAlign="right" bg={theadBg} color={textColor}>Actions</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
                       {paginatedMembers.map((member) => (
-                        <Tr key={member._id} _hover={{ bg: useColorModeValue("gray.50", "gray.800") }}>
-                          <Td py="8px" px="10px" fontWeight="bold" color="gray.500" fontSize="xs">
+                        <Tr key={member._id} _hover={{ bg: useColorModeValue("blue.50", "gray.800") }}>
+                          <Td py="10px" px="12px" fontWeight="bold" color="gray.500" fontSize="xs">
                             #{member.displayOrder || 0}
                           </Td>
-                          <Td py="8px" px="10px">
+                          <Td py="10px" px="12px">
                             <HStack spacing="10px">
                               <Avatar
                                 size="sm"
@@ -946,12 +948,12 @@ function Committees() {
                               </Box>
                             </HStack>
                           </Td>
-                          <Td py="8px" px="10px">
+                          <Td py="10px" px="12px">
                             <Badge
                               bg="blue.50"
                               color={primaryColor}
                               px="8px"
-                              py="2px"
+                              py="3px"
                               borderRadius="6px"
                               fontWeight="bold"
                               fontSize="xs"
@@ -959,12 +961,12 @@ function Committees() {
                               {member.post}
                             </Badge>
                           </Td>
-                          <Td py="8px" px="10px" maxW="200px">
+                          <Td py="10px" px="12px" maxW="200px">
                             <Text fontSize="xs" fontWeight="medium" color={textColor} noOfLines={2}>
                               {member.designation || "-"}
                             </Text>
                           </Td>
-                          <Td py="8px" px="10px" maxW="180px">
+                          <Td py="10px" px="12px" maxW="180px">
                             {member.region && (
                               <Text fontSize="xs" fontWeight="bold" color="blue.600" noOfLines={1}>
                                 📍 {member.region}
@@ -979,7 +981,7 @@ function Committees() {
                               <Text fontSize="xs" color="gray.400">-</Text>
                             )}
                           </Td>
-                          <Td py="8px" px="10px">
+                          <Td py="10px" px="12px">
                             {member.phone ? (
                               <HStack spacing="4px">
                                 <Icon as={FaPhone} color="green.500" w="11px" h="11px" />
@@ -993,7 +995,7 @@ function Committees() {
                               </Text>
                             )}
                           </Td>
-                          <Td py="8px" px="10px" textAlign="center">
+                          <Td py="10px" px="12px" textAlign="center">
                             {member.isQueryContact ? (
                               <Tag size="sm" colorScheme="purple" borderRadius="full" px="6px" py="1px" fontSize="10px">
                                 <TagLeftIcon as={MdOutlineContactPhone} boxSize="10px" />
@@ -1005,7 +1007,7 @@ function Committees() {
                               </Text>
                             )}
                           </Td>
-                          <Td py="8px" px="10px" textAlign="center">
+                          <Td py="10px" px="12px" textAlign="center">
                             <Badge
                               colorScheme={member.isActive ? "green" : "red"}
                               borderRadius="6px"
@@ -1016,7 +1018,7 @@ function Committees() {
                               {member.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </Td>
-                          <Td py="8px" px="10px" textAlign="right">
+                          <Td py="10px" px="12px" textAlign="right">
                             <HStack spacing="6px" justify="flex-end">
                               <IconButton
                                 size="xs"
@@ -1043,32 +1045,69 @@ function Committees() {
                 </Box>
               )}
 
-              {/* Pagination controls */}
-              {totalMemberPages > 1 && (
-                <Flex justify="space-between" align="center" mt="20px" pt="10px">
-                  <Text fontSize="sm" color="gray.500">
+              {/* Pagination Controls - Always Visible */}
+              {filteredMembers.length > 0 && (
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  mt="16px"
+                  pt="12px"
+                  borderTop="1px solid"
+                  borderColor={tableBorder}
+                  direction={{ base: "column", sm: "row" }}
+                  gap="12px"
+                >
+                  <Text fontSize="xs" color="gray.500" fontWeight="medium">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                     {Math.min(currentPage * itemsPerPage, filteredMembers.length)} of{" "}
                     {filteredMembers.length} members
                   </Text>
-                  <HStack spacing="6px">
-                    <IconButton
+
+                  <HStack spacing="8px">
+                    <Button
                       size="sm"
-                      aria-label="Previous Page"
-                      icon={<FaChevronLeft />}
-                      isDisabled={currentPage === 1}
+                      h="32px"
+                      fontSize="xs"
+                      leftIcon={<Icon as={FaChevronLeft} />}
+                      isDisabled={currentPage <= 1}
                       onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                    />
-                    <Text fontSize="sm" fontWeight="bold" px="10px">
-                      {currentPage} / {totalMemberPages}
-                    </Text>
-                    <IconButton
+                      variant="outline"
+                      colorScheme="blue"
+                      borderRadius="8px"
+                      px="12px"
+                    >
+                      Prev
+                    </Button>
+
+                    <Flex
+                      align="center"
+                      justify="center"
+                      px="12px"
+                      h="32px"
+                      borderRadius="8px"
+                      bg={useColorModeValue("blue.50", "gray.800")}
+                      border="1px solid"
+                      borderColor={useColorModeValue("blue.200", "blue.700")}
+                    >
+                      <Text fontSize="xs" fontWeight="bold" color={primaryColor}>
+                        Page {currentPage} of {Math.max(totalMemberPages, 1)}
+                      </Text>
+                    </Flex>
+
+                    <Button
                       size="sm"
-                      aria-label="Next Page"
-                      icon={<FaChevronRight />}
-                      isDisabled={currentPage === totalMemberPages}
+                      h="32px"
+                      fontSize="xs"
+                      rightIcon={<Icon as={FaChevronRight} />}
+                      isDisabled={currentPage >= totalMemberPages}
                       onClick={() => setCurrentPage((p) => Math.min(p + 1, totalMemberPages))}
-                    />
+                      variant="outline"
+                      colorScheme="blue"
+                      borderRadius="8px"
+                      px="12px"
+                    >
+                      Next
+                    </Button>
                   </HStack>
                 </Flex>
               )}

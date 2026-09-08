@@ -166,20 +166,10 @@ export default function Dashboard(props) {
       />
 
       <MainPanel
-        maxH={{
-          base: "auto",     // 320px - 480px
-          sm: "auto",       // 481px - 767px
-          md: "98vh",       // 768px - 1024px
-          lg: "98vh",       // 1025px - 1280px
-          xl: "98vh", // 1281px +
-          "2xl": "98vh" // Extra large
-        }}
-
-        overflow={{
-          sm: "auto",
-          md: "hidden"
-
-        }}
+        minH="100vh"
+        maxH="100vh"
+        overflowX="hidden"
+        overflowY="auto"
         w={{
           base: "100%",     // 320px - 480px
           sm: "100%",       // 481px - 767px
@@ -188,7 +178,6 @@ export default function Dashboard(props) {
           xl: "calc(100% - 275px)", // 1281px +
           "2xl": "calc(100% - 275px)" // Extra large
         }}
-
         transition="all 0.33s cubic-bezier(0.685, 0.0473, 0.346, 1)"
       >
         <Portal>
