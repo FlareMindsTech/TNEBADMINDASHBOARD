@@ -5,14 +5,10 @@ import {
   Flex,
   FormControl,
   FormLabel,
-  Grid,
   Icon,
   Input,
   Select,
   SimpleGrid,
-  Stat,
-  StatLabel,
-  StatNumber,
   Table,
   Tbody,
   Td,
@@ -40,37 +36,34 @@ import {
   Switch,
   Textarea,
   Avatar,
-  Image,
   HStack,
   VStack,
   IconButton,
   Tag,
   TagLabel,
   TagLeftIcon,
-  Tooltip,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
-import CardBody from "components/Card/CardBody.js";
-import CardHeader from "components/Card/CardHeader.js";
 import {
   FaUsers,
   FaUserPlus,
   FaEdit,
   FaTrash,
-  FaSearch,
   FaPhone,
   FaCalendarAlt,
   FaPlus,
-  FaCrown,
   FaListAlt,
   FaCheckCircle,
-  FaTimesCircle,
   FaExclamationTriangle,
   FaChevronLeft,
   FaChevronRight,
   FaBuilding,
-  FaInfoCircle,
   FaShieldAlt,
+  FaMapMarkerAlt,
+  FaSitemap,
+  FaSyncAlt,
 } from "react-icons/fa";
 import { MdOutlineContactPhone } from "react-icons/md";
 import {
@@ -87,15 +80,48 @@ import {
   showErrorToast,
 } from "views/utils/axiosInstance";
 
+const COMMITTEE_TYPES = [
+  {
+    key: "CEC",
+    name: "CEC Committee",
+    fullName: "Central Executive Committee",
+    icon: FaBuilding,
+    color: "#0A3D91",
+    
+  },
+  {
+    key: "EBF",
+    name: "EBF Committee",
+    fullName: "Engineers' Benevolent Fund",
+    icon: FaShieldAlt,
+    color: "#1E88E5",
+  },
+  {
+    key: "REGIONAL",
+    name: "Regional Secretary",
+    fullName: "Regional Secretaries & Representatives",
+    icon: FaMapMarkerAlt,
+    color: "#7B1FA2",
+  },
+  {
+    key: "BRANCH",
+    name: "Branch Secretary",
+    fullName: "Branch Secretaries",
+    icon: FaSitemap,
+    color: "#2E7D32",
+  },
+];
+
 function Committees() {
   const textColor = useColorModeValue("gray.700", "white");
   const cardBg = useColorModeValue("white", "gray.700");
+  const theadBg = useColorModeValue("gray.100", "gray.800");
   const tableBorder = useColorModeValue("gray.200", "gray.600");
   const primaryColor = "#0A3D91";
   const hoverColor = "#1E88E5";
   const toast = useToast();
 
-  // Active Committee Type: "CEC" | "EBF"
+  // Active Committee Type: "CEC" | "EBF" | "REGIONAL" | "BRANCH"
   const [committeeType, setCommitteeType] = useState("CEC");
 
   // Tab Index: 0 -> Members, 1 -> Term & Election, 2 -> Responsibilities
@@ -109,7 +135,7 @@ function Committees() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilterStatus, setMemberFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(25); // Default 25 for great scrolling UX
 
   // Member Modal
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -120,6 +146,7 @@ function Committees() {
     post: "",
     designation: "",
     branch: "",
+    region: "",
     phone: "",
     displayOrder: 0,
     isActive: true,
@@ -172,13 +199,20 @@ function Committees() {
   const [respToDelete, setRespToDelete] = useState(null);
   const [isDeletingResp, setIsDeletingResp] = useState(false);
 
+  // Active committee metadata
+  const currentCommitteeMeta = COMMITTEE_TYPES.find((c) => c.key === committeeType) || COMMITTEE_TYPES[0];
+
   // =========================================================
   // FETCH DATA ON MOUNT & COMMITTEE TYPE CHANGE
   // =========================================================
-  useEffect(() => {
+  const refreshAllData = () => {
     fetchMembers();
     fetchTerm();
     fetchResponsibilities();
+  };
+
+  useEffect(() => {
+    refreshAllData();
     setCurrentPage(1);
     setMemberSearch("");
     setMemberFilterStatus("all");
@@ -234,11 +268,16 @@ function Committees() {
   // =========================================================
   const handleOpenAddMember = () => {
     setEditingMember(null);
+    let defaultPost = "";
+    if (committeeType === "REGIONAL") defaultPost = "Regional Secretary";
+    if (committeeType === "BRANCH") defaultPost = "Branch Secretary";
+
     setMemberFormData({
       name: "",
-      post: "",
+      post: defaultPost,
       designation: "",
       branch: "",
+      region: "",
       phone: "",
       displayOrder: members.length + 1,
       isActive: true,
@@ -256,6 +295,7 @@ function Committees() {
       post: member.post || "",
       designation: member.designation || "",
       branch: member.branch || "",
+      region: member.region || "",
       phone: member.phone || "",
       displayOrder: member.displayOrder !== undefined ? member.displayOrder : 0,
       isActive: member.isActive !== undefined ? member.isActive : true,
@@ -294,6 +334,7 @@ function Committees() {
       fd.append("post", memberFormData.post.trim());
       fd.append("designation", memberFormData.designation.trim());
       fd.append("branch", memberFormData.branch.trim());
+      fd.append("region", memberFormData.region.trim());
       fd.append("phone", memberFormData.phone.trim());
       fd.append("displayOrder", memberFormData.displayOrder);
       fd.append("isActive", memberFormData.isActive);
@@ -316,7 +357,7 @@ function Committees() {
         await createCommitteeMember(committeeType, fd);
         toast({
           title: "Member Created",
-          description: `${memberFormData.name} added to ${committeeType} committee.`,
+          description: `${memberFormData.name} added to ${currentCommitteeMeta.name}.`,
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -387,7 +428,7 @@ function Committees() {
       }));
       toast({
         title: "Term Details Updated",
-        description: `${committeeType} term details successfully updated.`,
+        description: `${currentCommitteeMeta.name} term details successfully updated.`,
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -493,20 +534,20 @@ function Committees() {
     } finally {
       setIsDeletingResp(false);
     }
-
-    }
   };
 
   // =========================================================
   // FILTERED & PAGINATED MEMBERS
   // =========================================================
   const filteredMembers = members.filter((member) => {
+    const searchLower = memberSearch.toLowerCase();
     const matchesSearch =
-      (member.name && member.name.toLowerCase().includes(memberSearch.toLowerCase())) ||
-      (member.post && member.post.toLowerCase().includes(memberSearch.toLowerCase())) ||
-      (member.designation && member.designation.toLowerCase().includes(memberSearch.toLowerCase())) ||
-      (member.branch && member.branch.toLowerCase().includes(memberSearch.toLowerCase())) ||
-      (member.phone && member.phone.toLowerCase().includes(memberSearch.toLowerCase()));
+      (member.name && member.name.toLowerCase().includes(searchLower)) ||
+      (member.post && member.post.toLowerCase().includes(searchLower)) ||
+      (member.designation && member.designation.toLowerCase().includes(searchLower)) ||
+      (member.branch && member.branch.toLowerCase().includes(searchLower)) ||
+      (member.region && member.region.toLowerCase().includes(searchLower)) ||
+      (member.phone && member.phone.toLowerCase().includes(searchLower));
 
     const matchesStatus =
       memberFilterStatus === "all"
@@ -518,206 +559,224 @@ function Committees() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalMemberPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
-  const paginatedMembers = filteredMembers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalMemberPages = itemsPerPage >= 9999 ? 1 : Math.ceil(filteredMembers.length / itemsPerPage) || 1;
+  const paginatedMembers = itemsPerPage >= 9999
+    ? filteredMembers
+    : filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const activeMembersCount = members.filter((m) => m.isActive).length;
   const queryContactsCount = members.filter((m) => m.isQueryContact).length;
 
   return (
     <Flex flexDirection="column" pt={{ base: "120px", md: "75px" }} gap="24px">
-      {/* 1. TOP HEADER & COMMITTEE SELECTOR */}
+      {/* 1. TOP HEADER & 4-WING SELECTOR */}
       <Card bg={cardBg} p="20px" boxShadow="0 4px 12px rgba(0, 0, 0, 0.05)" borderRadius="15px">
         <Flex
-          direction={{ base: "column", md: "row" }}
+          direction={{ base: "column", lg: "row" }}
           justify="space-between"
-          align={{ base: "flex-start", md: "center" }}
-          gap="16px"
+          align={{ base: "flex-start", lg: "center" }}
+          gap="20px"
         >
-          <Box>
+          <Box flexShrink={0}>
             <HStack spacing="10px">
-              <Icon as={FaUsers} w="28px" h="28px" color={primaryColor} />
+              <Icon as={FaUsers} w="26px" h="26px" color={primaryColor} />
               <Heading as="h2" size="lg" color={textColor} fontWeight="bold">
                 Committee Management
               </Heading>
             </HStack>
-            <Text color="gray.500" fontSize="sm" mt="4px">
-              Manage Central Executive Committee (CEC) and Engineers' Benevolent Fund (EBF) members, term dates, and duties.
-            </Text>
           </Box>
 
-          {/* Committee Type Switcher */}
+          {/* Committee Switcher */}
           <HStack
-            bg={useColorModeValue("gray.100", "gray.800")}
-            p="4px"
-            borderRadius="12px"
-            border="1px solid"
-            borderColor={tableBorder}
+            spacing={{ base: "6px", md: "8px" }}
+            flexWrap="nowrap"
+            overflowX="auto"
+            maxW="100%"
+            py="2px"
+            sx={{
+              "&::-webkit-scrollbar": { display: "none" },
+              msOverflowStyle: "none",
+              scrollbarWidth: "none",
+            }}
           >
-            <Button
-              size="md"
-              borderRadius="10px"
-              bg={committeeType === "CEC" ? primaryColor : "transparent"}
-              color={committeeType === "CEC" ? "white" : textColor}
-              _hover={{ bg: committeeType === "CEC" ? hoverColor : "gray.200" }}
-              onClick={() => setCommitteeType("CEC")}
-              leftIcon={<Icon as={FaBuilding} />}
-              px="20px"
-              fontWeight="bold"
-            >
-              CEC Committee
-            </Button>
-            <Button
-              size="md"
-              borderRadius="10px"
-              bg={committeeType === "EBF" ? primaryColor : "transparent"}
-              color={committeeType === "EBF" ? "white" : textColor}
-              _hover={{ bg: committeeType === "EBF" ? hoverColor : "gray.200" }}
-              onClick={() => setCommitteeType("EBF")}
-              leftIcon={<Icon as={FaShieldAlt} />}
-              px="20px"
-              fontWeight="bold"
-            >
-              EBF Committee
-            </Button>
+            {COMMITTEE_TYPES.map((type) => {
+              const isSelected = committeeType === type.key;
+              return (
+                <Button
+                  key={type.key}
+                  size="sm"
+                  h="38px"
+                  flexShrink={0}
+                  whiteSpace="nowrap"
+                  borderRadius="10px"
+                  bg={isSelected ? primaryColor : useColorModeValue("gray.100", "gray.800")}
+                  color={isSelected ? "white" : textColor}
+                  _hover={{ bg: isSelected ? hoverColor : useColorModeValue("gray.200", "gray.700") }}
+                  onClick={() => setCommitteeType(type.key)}
+                  leftIcon={<Icon as={type.icon} />}
+                  px={{ base: "10px", md: "14px" }}
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="bold"
+                  boxShadow={isSelected ? "0 2px 8px rgba(10, 61, 145, 0.25)" : "none"}
+                >
+                  {type.name}
+                </Button>
+              );
+            })}
           </HStack>
         </Flex>
       </Card>
 
       {/* 2. STATS OVERVIEW CARDS */}
-      <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing="20px">
+      <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: "12px", md: "14px" }}>
         {/* Total Members */}
-        <Card bg={cardBg} p="18px" borderRadius="14px" boxShadow="0 2px 10px rgba(0,0,0,0.04)">
+        <Card bg={cardBg} p="12px 16px" borderRadius="12px" boxShadow="0 2px 8px rgba(0,0,0,0.04)">
           <Flex align="center" justify="space-between">
             <Box>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
-                Total {committeeType} Members
+              <Text fontSize="11px" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="0.3px">
+                Total {currentCommitteeMeta.name}
               </Text>
-              <Heading size="xl" color={textColor} mt="4px">
+              <Heading size="md" color={textColor} mt="2px">
                 {members.length}
               </Heading>
             </Box>
             <Flex
-              w="50px"
-              h="50px"
+              w="38px"
+              h="38px"
               align="center"
               justify="center"
-              borderRadius="12px"
+              borderRadius="10px"
               bg="blue.50"
               color={primaryColor}
             >
-              <Icon as={FaUsers} w="24px" h="24px" />
+              <Icon as={currentCommitteeMeta.icon} w="18px" h="18px" />
             </Flex>
           </Flex>
         </Card>
 
         {/* Active Members */}
-        <Card bg={cardBg} p="18px" borderRadius="14px" boxShadow="0 2px 10px rgba(0,0,0,0.04)">
+        <Card bg={cardBg} p="12px 16px" borderRadius="12px" boxShadow="0 2px 8px rgba(0,0,0,0.04)">
           <Flex align="center" justify="space-between">
             <Box>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
+              <Text fontSize="11px" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="0.3px">
                 Active Members
               </Text>
-              <Heading size="xl" color="green.500" mt="4px">
+              <Heading size="md" color="green.500" mt="2px">
                 {activeMembersCount}
               </Heading>
             </Box>
             <Flex
-              w="50px"
-              h="50px"
+              w="38px"
+              h="38px"
               align="center"
               justify="center"
-              borderRadius="12px"
+              borderRadius="10px"
               bg="green.50"
               color="green.500"
             >
-              <Icon as={FaCheckCircle} w="24px" h="24px" />
+              <Icon as={FaCheckCircle} w="18px" h="18px" />
             </Flex>
           </Flex>
         </Card>
 
         {/* Query Support Contacts */}
-        <Card bg={cardBg} p="18px" borderRadius="14px" boxShadow="0 2px 10px rgba(0,0,0,0.04)">
+        <Card bg={cardBg} p="12px 16px" borderRadius="12px" boxShadow="0 2px 8px rgba(0,0,0,0.04)">
           <Flex align="center" justify="space-between">
             <Box>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
+              <Text fontSize="11px" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="0.3px">
                 Query Contacts
               </Text>
-              <Heading size="xl" color="purple.500" mt="4px">
+              <Heading size="md" color="purple.500" mt="2px">
                 {queryContactsCount}
               </Heading>
             </Box>
             <Flex
-              w="50px"
-              h="50px"
+              w="38px"
+              h="38px"
               align="center"
               justify="center"
-              borderRadius="12px"
+              borderRadius="10px"
               bg="purple.50"
               color="purple.500"
             >
-              <Icon as={MdOutlineContactPhone} w="26px" h="26px" />
+              <Icon as={MdOutlineContactPhone} w="20px" h="20px" />
             </Flex>
           </Flex>
         </Card>
 
         {/* Current Term */}
-        <Card bg={cardBg} p="18px" borderRadius="14px" boxShadow="0 2px 10px rgba(0,0,0,0.04)">
+        <Card bg={cardBg} p="12px 16px" borderRadius="12px" boxShadow="0 2px 8px rgba(0,0,0,0.04)">
           <Flex align="center" justify="space-between">
             <Box>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase">
+              <Text fontSize="11px" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="0.3px">
                 Current Term
               </Text>
-              <Text fontSize="md" fontWeight="bold" color={textColor} mt="6px" noOfLines={1}>
+              <Text fontSize="sm" fontWeight="bold" color={textColor} mt="2px" noOfLines={1}>
                 {termData.currentTerm || "Not specified"}
               </Text>
             </Box>
             <Flex
-              w="50px"
-              h="50px"
+              w="38px"
+              h="38px"
               align="center"
               justify="center"
-              borderRadius="12px"
+              borderRadius="10px"
               bg="orange.50"
               color="orange.500"
             >
-              <Icon as={FaCalendarAlt} w="22px" h="22px" />
+              <Icon as={FaCalendarAlt} w="18px" h="18px" />
             </Flex>
           </Flex>
         </Card>
       </SimpleGrid>
 
       {/* 3. MAIN SECTION TABS */}
-      <Card bg={cardBg} p="20px" borderRadius="15px" boxShadow="0 4px 12px rgba(0, 0, 0, 0.05)">
+      <Card bg={cardBg} p={{ base: "14px", md: "16px" }} borderRadius="14px" boxShadow="0 4px 12px rgba(0, 0, 0, 0.05)">
         <Tabs
           variant="enclosed"
           colorScheme="blue"
           index={tabIndex}
           onChange={(index) => setTabIndex(index)}
         >
-          <TabList borderBottom="2px solid" borderColor={tableBorder} mb="20px">
-            <Tab fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
-              <HStack spacing="6px">
-                <Icon as={FaUsers} />
-                <Text>Members Directory ({members.length})</Text>
-              </HStack>
-            </Tab>
-            <Tab fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
-              <HStack spacing="6px">
-                <Icon as={FaCalendarAlt} />
-                <Text>Term & Election Details</Text>
-              </HStack>
-            </Tab>
-            <Tab fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
-              <HStack spacing="6px">
-                <Icon as={FaListAlt} />
-                <Text>Responsibilities & Roles ({responsibilities.length})</Text>
-              </HStack>
-            </Tab>
-          </TabList>
+          <Flex justify="space-between" align={{ base: "stretch", md: "center" }} direction={{ base: "column", md: "row" }} mb="14px" gap="10px">
+            <TabList borderBottom="2px solid" borderColor={tableBorder} mb="0" flexWrap="wrap">
+              <Tab py="6px" px="12px" fontSize="13px" fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
+                <HStack spacing="6px">
+                  <Icon as={FaUsers} w="14px" h="14px" />
+                  <Text>Members Directory ({members.length})</Text>
+                </HStack>
+              </Tab>
+              <Tab py="6px" px="12px" fontSize="13px" fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
+                <HStack spacing="6px">
+                  <Icon as={FaCalendarAlt} w="14px" h="14px" />
+                  <Text>Term & Election Details</Text>
+                </HStack>
+              </Tab>
+              <Tab py="6px" px="12px" fontSize="13px" fontWeight="bold" _selected={{ color: primaryColor, borderColor: primaryColor, borderBottom: "none", bg: useColorModeValue("blue.50", "gray.800") }}>
+                <HStack spacing="6px">
+                  <Icon as={FaListAlt} w="14px" h="14px" />
+                  <Text>Responsibilities & Roles ({responsibilities.length})</Text>
+                </HStack>
+              </Tab>
+            </TabList>
+
+            {/* Quick Refresh Button */}
+            <Button
+              size="xs"
+              h="30px"
+              px="10px"
+              fontSize="12px"
+              variant="outline"
+              colorScheme="blue"
+              leftIcon={<Icon as={FaSyncAlt} className={membersLoading ? "fa-spin" : ""} />}
+              onClick={refreshAllData}
+              isLoading={membersLoading || termLoading || respLoading}
+              borderRadius="8px"
+              alignSelf={{ base: "flex-end", md: "center" }}
+            >
+              Refresh Data
+            </Button>
+          </Flex>
 
           <TabPanels>
             {/* =========================================================
@@ -729,119 +788,170 @@ function Committees() {
                 direction={{ base: "column", md: "row" }}
                 justify="space-between"
                 align={{ base: "stretch", md: "center" }}
-                mb="20px"
-                gap="12px"
+                mb="14px"
+                gap="10px"
               >
-                <HStack spacing="12px" flex="1" maxW={{ base: "100%", md: "550px" }}>
+                <HStack spacing="8px" flex="1" maxW={{ base: "100%", md: "600px" }} flexWrap={{ base: "wrap", sm: "nowrap" }}>
                   <Input
-                    placeholder="Search by name, post, designation, branch, phone..."
+                    size="sm"
+                    h="34px"
+                    fontSize="13px"
+                    placeholder="Search by name, post, branch, region, phone..."
                     value={memberSearch}
                     onChange={(e) => {
                       setMemberSearch(e.target.value);
                       setCurrentPage(1);
                     }}
-                    borderRadius="10px"
+                    borderRadius="8px"
+                    bg={useColorModeValue("white", "gray.800")}
                   />
                   <Select
-                    w="170px"
-                    borderRadius="10px"
+                    size="sm"
+                    h="34px"
+                    fontSize="13px"
+                    w={{ base: "100%", sm: "130px" }}
+                    borderRadius="8px"
                     value={memberFilterStatus}
                     onChange={(e) => {
                       setMemberFilterStatus(e.target.value);
                       setCurrentPage(1);
                     }}
+                    bg={useColorModeValue("white", "gray.800")}
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active Only</option>
                     <option value="inactive">Inactive Only</option>
                   </Select>
+
+                  <Select
+                    size="sm"
+                    h="34px"
+                    fontSize="13px"
+                    w={{ base: "100%", sm: "115px" }}
+                    borderRadius="8px"
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    bg={useColorModeValue("white", "gray.800")}
+                  >
+                    <option value={10}>10 / page</option>
+                    <option value={25}>25 / page</option>
+                    <option value={50}>50 / page</option>
+                    <option value={100}>100 / page</option>
+                    <option value={9999}>View All</option>
+                  </Select>
                 </HStack>
 
                 <Button
+                  size="sm"
+                  h="34px"
+                  fontSize="13px"
                   bg={primaryColor}
                   color="white"
                   _hover={{ bg: hoverColor }}
                   leftIcon={<Icon as={FaUserPlus} />}
                   onClick={handleOpenAddMember}
-                  borderRadius="10px"
-                  px="20px"
+                  borderRadius="8px"
+                  px="14px"
+                  flexShrink={0}
                 >
-                  Add {committeeType} Member
+                  Add Member
                 </Button>
               </Flex>
 
-              {/* Members Table */}
+              {/* Scrollable Members Table */}
               {membersLoading ? (
                 <Flex justify="center" align="center" minH="250px">
-                  <Spinner size="xl" color={primaryColor} />
+                  <Spinner size="lg" color={primaryColor} />
                 </Flex>
               ) : filteredMembers.length === 0 ? (
                 <Flex
                   direction="column"
                   align="center"
                   justify="center"
-                  py="50px"
+                  py="40px"
                   border="2px dashed"
                   borderColor={tableBorder}
-                  borderRadius="12px"
+                  borderRadius="10px"
                 >
-                  <Icon as={FaUsers} w="40px" h="40px" color="gray.400" mb="12px" />
-                  <Text fontSize="lg" fontWeight="semibold" color={textColor}>
-                    No {committeeType} members found
+                  <Icon as={FaUsers} w="36px" h="36px" color="gray.400" mb="10px" />
+                  <Text fontSize="md" fontWeight="semibold" color={textColor}>
+                    No {currentCommitteeMeta.name} members found
                   </Text>
-                  <Text color="gray.500" fontSize="sm" mt="4px">
-                    Try adjusting your search criteria or add a new committee member.
+                  <Text color="gray.500" fontSize="xs" mt="2px">
+                    Try adjusting your search criteria or add a new member.
                   </Text>
                 </Flex>
               ) : (
-                <Box overflowX="auto">
-                  <Table variant="simple" colorScheme="gray">
-                    <Thead bg={useColorModeValue("gray.50", "gray.800")}>
+                <Box
+                  maxH="560px"
+                  overflowY="auto"
+                  overflowX="auto"
+                  borderRadius="10px"
+                  border="1px solid"
+                  borderColor={tableBorder}
+                  css={{
+                    "&::-webkit-scrollbar": { width: "6px", height: "6px" },
+                    "&::-webkit-scrollbar-track": { background: "rgba(0, 0, 0, 0.05)" },
+                    "&::-webkit-scrollbar-thumb": { background: "rgba(10, 61, 145, 0.4)", borderRadius: "6px" },
+                  }}
+                >
+                  <Table variant="simple" colorScheme="gray" size="sm">
+                    <Thead
+                      position="sticky"
+                      top="0"
+                      zIndex="2"
+                      bg={theadBg}
+                      boxShadow="0 2px 4px rgba(0, 0, 0, 0.06)"
+                    >
                       <Tr>
-                        <Th width="60px">Order</Th>
-                        <Th>Member</Th>
-                        <Th>Post / Position</Th>
-                        <Th>Designation & Branch</Th>
-                        <Th>Contact</Th>
-                        <Th textAlign="center">Query Contact</Th>
-                        <Th textAlign="center">Status</Th>
-                        <Th textAlign="right">Actions</Th>
+                        <Th py="8px" px="10px" fontSize="11px" width="55px" bg={theadBg}>Order</Th>
+                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Member</Th>
+                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Post / Position</Th>
+                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Designation</Th>
+                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>{committeeType === "REGIONAL" ? "Region" : committeeType === "BRANCH" ? "Branch" : "Region / Branch"}</Th>
+                        <Th py="8px" px="10px" fontSize="11px" bg={theadBg}>Contact</Th>
+                        <Th py="8px" px="10px" fontSize="11px" textAlign="center" bg={theadBg}>Query Contact</Th>
+                        <Th py="8px" px="10px" fontSize="11px" textAlign="center" bg={theadBg}>Status</Th>
+                        <Th py="8px" px="10px" fontSize="11px" textAlign="right" bg={theadBg}>Actions</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
                       {paginatedMembers.map((member) => (
                         <Tr key={member._id} _hover={{ bg: useColorModeValue("gray.50", "gray.800") }}>
-                          <Td fontWeight="bold" color="gray.500">
+                          <Td py="8px" px="10px" fontWeight="bold" color="gray.500" fontSize="xs">
                             #{member.displayOrder || 0}
                           </Td>
-                          <Td>
-                            <HStack spacing="12px">
+                          <Td py="8px" px="10px">
+                            <HStack spacing="10px">
                               <Avatar
-                                size="md"
+                                size="sm"
                                 name={member.name}
                                 src={member.photo}
-                                borderRadius="10px"
+                                borderRadius="8px"
                                 border="2px solid"
                                 borderColor={primaryColor}
                               />
                               <Box>
-                                <Text fontWeight="bold" color={textColor}>
+                                <Text fontWeight="bold" fontSize="xs" color={textColor}>
                                   {member.name}
                                 </Text>
                                 {member.isQueryContact && (
-                                  <Badge colorScheme="purple" fontSize="10px" mt="2px">
+                                  <Badge colorScheme="purple" fontSize="9px" px="4px" borderRadius="3px">
                                     Official Contact
                                   </Badge>
                                 )}
                               </Box>
                             </HStack>
                           </Td>
-                          <Td>
+                          <Td py="8px" px="10px">
                             <Badge
                               bg="blue.50"
                               color={primaryColor}
-                              px="10px"
-                              py="4px"
+                              px="8px"
+                              py="2px"
                               borderRadius="6px"
                               fontWeight="bold"
                               fontSize="xs"
@@ -849,19 +959,31 @@ function Committees() {
                               {member.post}
                             </Badge>
                           </Td>
-                          <Td maxW="260px">
-                            <Text fontSize="sm" fontWeight="medium" color={textColor} noOfLines={1}>
+                          <Td py="8px" px="10px" maxW="200px">
+                            <Text fontSize="xs" fontWeight="medium" color={textColor} noOfLines={2}>
                               {member.designation || "-"}
                             </Text>
-                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                              {member.branch || "-"}
-                            </Text>
                           </Td>
-                          <Td>
+                          <Td py="8px" px="10px" maxW="180px">
+                            {member.region && (
+                              <Text fontSize="xs" fontWeight="bold" color="blue.600" noOfLines={1}>
+                                📍 {member.region}
+                              </Text>
+                            )}
+                            {member.branch && (
+                              <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                                🏢 {member.branch}
+                              </Text>
+                            )}
+                            {!member.region && !member.branch && (
+                              <Text fontSize="xs" color="gray.400">-</Text>
+                            )}
+                          </Td>
+                          <Td py="8px" px="10px">
                             {member.phone ? (
-                              <HStack spacing="6px">
-                                <Icon as={FaPhone} color="green.500" w="12px" h="12px" />
-                                <Text fontSize="sm" fontWeight="medium">
+                              <HStack spacing="4px">
+                                <Icon as={FaPhone} color="green.500" w="11px" h="11px" />
+                                <Text fontSize="xs" fontWeight="medium">
                                   {member.phone}
                                 </Text>
                               </HStack>
@@ -871,10 +993,10 @@ function Committees() {
                               </Text>
                             )}
                           </Td>
-                          <Td textAlign="center">
+                          <Td py="8px" px="10px" textAlign="center">
                             {member.isQueryContact ? (
-                              <Tag size="sm" colorScheme="purple" borderRadius="full">
-                                <TagLeftIcon as={MdOutlineContactPhone} />
+                              <Tag size="sm" colorScheme="purple" borderRadius="full" px="6px" py="1px" fontSize="10px">
+                                <TagLeftIcon as={MdOutlineContactPhone} boxSize="10px" />
                                 <TagLabel>Yes</TagLabel>
                               </Tag>
                             ) : (
@@ -883,20 +1005,21 @@ function Committees() {
                               </Text>
                             )}
                           </Td>
-                          <Td textAlign="center">
+                          <Td py="8px" px="10px" textAlign="center">
                             <Badge
                               colorScheme={member.isActive ? "green" : "red"}
                               borderRadius="6px"
-                              px="8px"
-                              py="3px"
+                              px="6px"
+                              py="2px"
+                              fontSize="10px"
                             >
                               {member.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </Td>
-                          <Td textAlign="right">
-                            <HStack spacing="8px" justify="flex-end">
+                          <Td py="8px" px="10px" textAlign="right">
+                            <HStack spacing="6px" justify="flex-end">
                               <IconButton
-                                size="sm"
+                                size="xs"
                                 aria-label="Edit member"
                                 icon={<FaEdit />}
                                 colorScheme="blue"
@@ -904,7 +1027,7 @@ function Committees() {
                                 onClick={() => handleOpenEditMember(member)}
                               />
                               <IconButton
-                                size="sm"
+                                size="xs"
                                 aria-label="Delete member"
                                 icon={<FaTrash />}
                                 colorScheme="red"
@@ -917,37 +1040,37 @@ function Committees() {
                       ))}
                     </Tbody>
                   </Table>
-
-                  {/* Pagination */}
-                  {totalMemberPages > 1 && (
-                    <Flex justify="space-between" align="center" mt="20px" pt="10px">
-                      <Text fontSize="sm" color="gray.500">
-                        Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                        {Math.min(currentPage * itemsPerPage, filteredMembers.length)} of{" "}
-                        {filteredMembers.length} members
-                      </Text>
-                      <HStack spacing="6px">
-                        <IconButton
-                          size="sm"
-                          aria-label="Previous Page"
-                          icon={<FaChevronLeft />}
-                          isDisabled={currentPage === 1}
-                          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                        />
-                        <Text fontSize="sm" fontWeight="bold" px="10px">
-                          {currentPage} / {totalMemberPages}
-                        </Text>
-                        <IconButton
-                          size="sm"
-                          aria-label="Next Page"
-                          icon={<FaChevronRight />}
-                          isDisabled={currentPage === totalMemberPages}
-                          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalMemberPages))}
-                        />
-                      </HStack>
-                    </Flex>
-                  )}
                 </Box>
+              )}
+
+              {/* Pagination controls */}
+              {totalMemberPages > 1 && (
+                <Flex justify="space-between" align="center" mt="20px" pt="10px">
+                  <Text fontSize="sm" color="gray.500">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredMembers.length)} of{" "}
+                    {filteredMembers.length} members
+                  </Text>
+                  <HStack spacing="6px">
+                    <IconButton
+                      size="sm"
+                      aria-label="Previous Page"
+                      icon={<FaChevronLeft />}
+                      isDisabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    />
+                    <Text fontSize="sm" fontWeight="bold" px="10px">
+                      {currentPage} / {totalMemberPages}
+                    </Text>
+                    <IconButton
+                      size="sm"
+                      aria-label="Next Page"
+                      icon={<FaChevronRight />}
+                      isDisabled={currentPage === totalMemberPages}
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalMemberPages))}
+                    />
+                  </HStack>
+                </Flex>
               )}
             </TabPanel>
 
@@ -971,9 +1094,7 @@ function Committees() {
                     <Flex justify="space-between" align="center" mb="20px">
                       <Box>
                         <Heading size="md" color={textColor}>
-                          {committeeType === "CEC"
-                            ? "Central Executive Committee Term"
-                            : "Engineers' Benevolent Fund Term"}
+                          {currentCommitteeMeta.fullName} Term
                         </Heading>
                         <Text fontSize="sm" color="gray.500" mt="2px">
                           Current office term dates and election schedules
@@ -1041,7 +1162,7 @@ function Committees() {
               <Flex justify="space-between" align="center" mb="20px">
                 <Box>
                   <Heading size="md" color={textColor}>
-                    {committeeType} Key Responsibilities & Functions
+                    {currentCommitteeMeta.name} Key Responsibilities & Functions
                   </Heading>
                   <Text fontSize="sm" color="gray.500">
                     Define and display the core objectives and responsibilities of this committee
@@ -1059,6 +1180,7 @@ function Committees() {
                 </Button>
               </Flex>
 
+              {/* Scrollable Responsibilities Table */}
               {respLoading ? (
                 <Flex justify="center" align="center" minH="200px">
                   <Spinner size="xl" color={primaryColor} />
@@ -1082,17 +1204,35 @@ function Committees() {
                   </Text>
                 </Flex>
               ) : (
-                <Box overflowX="auto">
+                <Box
+                  maxH="480px"
+                  overflowY="auto"
+                  overflowX="auto"
+                  borderRadius="12px"
+                  border="1px solid"
+                  borderColor={tableBorder}
+                  css={{
+                    "&::-webkit-scrollbar": { width: "6px", height: "6px" },
+                    "&::-webkit-scrollbar-track": { background: "rgba(0, 0, 0, 0.05)" },
+                    "&::-webkit-scrollbar-thumb": { background: "rgba(10, 61, 145, 0.4)", borderRadius: "6px" },
+                  }}
+                >
                   <Table variant="simple">
-                    <Thead bg={useColorModeValue("gray.50", "gray.800")}>
+                    <Thead
+                      position="sticky"
+                      top="0"
+                      zIndex="2"
+                      bg={theadBg}
+                      boxShadow="0 2px 4px rgba(0, 0, 0, 0.06)"
+                    >
                       <Tr>
-                        <Th width="70px">Order</Th>
-                        <Th width="250px">Title</Th>
-                        <Th>Description</Th>
-                        <Th width="100px" textAlign="center">
+                        <Th width="70px" bg={theadBg}>Order</Th>
+                        <Th width="250px" bg={theadBg}>Title</Th>
+                        <Th bg={theadBg}>Description</Th>
+                        <Th width="100px" textAlign="center" bg={theadBg}>
                           Status
                         </Th>
-                        <Th width="120px" textAlign="right">
+                        <Th width="120px" textAlign="right" bg={theadBg}>
                           Actions
                         </Th>
                       </Tr>
@@ -1157,7 +1297,9 @@ function Committees() {
         <ModalOverlay />
         <ModalContent borderRadius="16px">
           <ModalHeader bg={primaryColor} color="white" borderTopRadius="16px">
-            {editingMember ? `Edit ${committeeType} Member` : `Add New ${committeeType} Member`}
+            {editingMember
+              ? `Edit ${currentCommitteeMeta.name} Member`
+              : `Add New ${currentCommitteeMeta.name} Member`}
           </ModalHeader>
           <ModalCloseButton color="white" />
           <form onSubmit={handleSaveMember}>
@@ -1213,28 +1355,48 @@ function Committees() {
                   <FormControl isRequired>
                     <FormLabel fontSize="sm">Post / Position</FormLabel>
                     <Input
-                      placeholder="e.g. President, General Secretary, Treasurer"
+                      placeholder={
+                        committeeType === "REGIONAL"
+                          ? "Regional Secretary"
+                          : committeeType === "BRANCH"
+                          ? "Branch Secretary"
+                          : "e.g. President, General Secretary, Treasurer"
+                      }
                       value={memberFormData.post}
                       onChange={(e) => setMemberFormData({ ...memberFormData, post: e.target.value })}
                     />
                   </FormControl>
                 </SimpleGrid>
 
-                {/* Designation & Branch */}
+                {/* Designation */}
+                <FormControl>
+                  <FormLabel fontSize="sm">Designation</FormLabel>
+                  <Input
+                    placeholder="e.g. EE / Master Plan / Transmission or SE / DISTRIBUTION"
+                    value={memberFormData.designation}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, designation: e.target.value })}
+                  />
+                </FormControl>
+
+                {/* Region & Branch */}
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing="14px">
                   <FormControl>
-                    <FormLabel fontSize="sm">Designation</FormLabel>
+                    <FormLabel fontSize="sm">
+                      Region {committeeType === "REGIONAL" && <Text as="span" color="red.500">*</Text>}
+                    </FormLabel>
                     <Input
-                      placeholder="e.g. EE / Master Plan / Transmission"
-                      value={memberFormData.designation}
-                      onChange={(e) => setMemberFormData({ ...memberFormData, designation: e.target.value })}
+                      placeholder="e.g. CHENNAI HQRS, COIMBATORE, MADURAI"
+                      value={memberFormData.region}
+                      onChange={(e) => setMemberFormData({ ...memberFormData, region: e.target.value })}
                     />
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel fontSize="sm">Branch / Office Location</FormLabel>
+                    <FormLabel fontSize="sm">
+                      Branch / Office Location {committeeType === "BRANCH" && <Text as="span" color="red.500">*</Text>}
+                    </FormLabel>
                     <Input
-                      placeholder="e.g. TANTRANSCO / HQRS / CHENNAI"
+                      placeholder="e.g. BASIN BRIDGE, CHENNAI/CENTRAL, METTUR EDC"
                       value={memberFormData.branch}
                       onChange={(e) => setMemberFormData({ ...memberFormData, branch: e.target.value })}
                     />
@@ -1246,7 +1408,7 @@ function Committees() {
                   <FormControl>
                     <FormLabel fontSize="sm">Contact Phone</FormLabel>
                     <Input
-                      placeholder="e.g. 94980 38894"
+                      placeholder="e.g. 94980 38894 / 94458 50769"
                       value={memberFormData.phone}
                       onChange={(e) => setMemberFormData({ ...memberFormData, phone: e.target.value })}
                     />
@@ -1352,7 +1514,7 @@ function Committees() {
         <ModalOverlay />
         <ModalContent borderRadius="16px">
           <ModalHeader bg={primaryColor} color="white" borderTopRadius="16px">
-            Edit {committeeType} Term & Election Details
+            Edit {currentCommitteeMeta.name} Term & Election Details
           </ModalHeader>
           <ModalCloseButton color="white" />
           <form onSubmit={handleSaveTerm}>
@@ -1361,7 +1523,7 @@ function Committees() {
                 <FormControl isRequired>
                   <FormLabel fontSize="sm">Current Term</FormLabel>
                   <Input
-                    placeholder="e.g. 2024 - 2026"
+                    placeholder="e.g. 2025 - 2027"
                     value={termFormData.currentTerm}
                     onChange={(e) => setTermFormData({ ...termFormData, currentTerm: e.target.value })}
                   />
@@ -1370,7 +1532,7 @@ function Committees() {
                 <FormControl>
                   <FormLabel fontSize="sm">Elected Date</FormLabel>
                   <Input
-                    placeholder="e.g. 15-07-2024"
+                    placeholder="e.g. October 2025"
                     value={termFormData.electedDate}
                     onChange={(e) => setTermFormData({ ...termFormData, electedDate: e.target.value })}
                   />
@@ -1379,7 +1541,7 @@ function Committees() {
                 <FormControl>
                   <FormLabel fontSize="sm">Next Election Date</FormLabel>
                   <Input
-                    placeholder="e.g. July 2026"
+                    placeholder="e.g. October 2027"
                     value={termFormData.nextElectionDate}
                     onChange={(e) => setTermFormData({ ...termFormData, nextElectionDate: e.target.value })}
                   />
@@ -1420,7 +1582,7 @@ function Committees() {
                 <FormControl isRequired>
                   <FormLabel fontSize="sm">Title / Duty Area</FormLabel>
                   <Input
-                    placeholder="e.g. Policy & Administration"
+                    placeholder="e.g. Policy Making, Administration, Member Welfare"
                     value={respFormData.title}
                     onChange={(e) => setRespFormData({ ...respFormData, title: e.target.value })}
                   />
@@ -1514,6 +1676,6 @@ function Committees() {
       </Modal>
     </Flex>
   );
-
+}
 
 export default Committees;

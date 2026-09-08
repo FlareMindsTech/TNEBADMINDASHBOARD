@@ -23,7 +23,8 @@ import Events from "views/Dashboard/Events.js";
 import Forms from "views/Dashboard/Forms.js";
 import ImportantNotice from "views/Dashboard/ImportantNotice.js";
 import BoardProceedings from "views/Dashboard/BoardProceedings.js";
-import { FaFileAlt, FaBullhorn, FaClipboardList } from "react-icons/fa";
+import Committees from "views/Dashboard/Committees.js";
+import { FaFileAlt, FaBullhorn, FaClipboardList, FaUsers } from "react-icons/fa";
 
 const ICON_COLOR = "#0A3D91";
 
@@ -104,6 +105,13 @@ var dashRoutes = [
     name: "Board Proceedings",
     icon: <FaClipboardList color={ICON_COLOR} />,
     element: <BoardProceedings />,
+    layout: "/admin",
+  },
+  {
+    path: "/committees",
+    name: "Committees & Wings",
+    icon: <FaUsers color={ICON_COLOR} />,
+    element: <Committees />,
     layout: "/admin",
   },
   // {

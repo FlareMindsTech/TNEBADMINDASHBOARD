@@ -521,9 +521,17 @@ export const deleteNotice = async (noticeId) => {
   });
 };
 
-// ----- Committee APIs (Admin) -----
+// ----- Committee APIs (Admin with Public Fallback) -----
 export const getCommitteeMembers = async (type = "CEC") => {
-  return apiRequest(`/admin/committees/${type}/members`, { method: "GET" });
+  try {
+    const res = await apiRequest(`/admin/committees/${type}/members?limit=200`, { method: "GET" });
+    return res;
+  } catch (err) {
+    // If admin endpoint fails (e.g. session/auth expired in dev), fallback to public aggregated endpoint
+    console.warn(`Admin members endpoint failed for ${type}, falling back to public committee API`);
+    const pub = await apiRequest(`/committees/${type}`, { method: "GET" });
+    return pub.members || [];
+  }
 };
 
 export const createCommitteeMember = async (type = "CEC", memberData) => {
@@ -549,7 +557,12 @@ export const deleteCommitteeMember = async (type = "CEC", memberId) => {
 };
 
 export const getCommitteeTerm = async (type = "CEC") => {
-  return apiRequest(`/admin/committees/${type}/term`, { method: "GET" });
+  try {
+    return await apiRequest(`/admin/committees/${type}/term`, { method: "GET" });
+  } catch (err) {
+    const pub = await apiRequest(`/committees/${type}`, { method: "GET" });
+    return pub.term || { currentTerm: '', electedDate: '', nextElectionDate: '', totalMembers: 0 };
+  }
 };
 
 export const updateCommitteeTerm = async (type = "CEC", termData) => {
@@ -560,7 +573,12 @@ export const updateCommitteeTerm = async (type = "CEC", termData) => {
 };
 
 export const getCommitteeResponsibilities = async (type = "CEC") => {
-  return apiRequest(`/admin/committees/${type}/responsibilities`, { method: "GET" });
+  try {
+    return await apiRequest(`/admin/committees/${type}/responsibilities`, { method: "GET" });
+  } catch (err) {
+    const pub = await apiRequest(`/committees/${type}`, { method: "GET" });
+    return pub.responsibilities || [];
+  }
 };
 
 export const createCommitteeResponsibility = async (type = "CEC", respData) => {
@@ -582,3 +600,48 @@ export const deleteCommitteeResponsibility = async (type = "CEC", respId) => {
     method: "DELETE",
   });
 };
+
+// ----- Board Proceedings APIs -----
+export const getAllBoardProceedings = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?category=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.category) searchParams.append("category", params.category);
+    if (params.type) searchParams.append("type", params.type);
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/board-proceedings${queryString}`, { method: "GET" });
+};
+
+export const getBoardProceedingById = async (id) => {
+  return apiRequest(`/board-proceedings/${id}`, { method: "GET" });
+};
+
+export const createBoardProceeding = async (formData) => {
+  return apiRequest("/board-proceedings", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateBoardProceeding = async (id, formData) => {
+  return apiRequest(`/board-proceedings/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteBoardProceeding = async (id) => {
+  return apiRequest(`/board-proceedings/${id}`, {
+    method: "DELETE",
+  });
+};
+

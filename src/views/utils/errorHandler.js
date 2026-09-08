@@ -115,11 +115,18 @@ export const getStatusDetails = (status, customMessage = null) => {
         isAuthError: true,
       };
 
-    case 403:
+    case 403: {
+      const isUnknownRole =
+        typeof customMessage === "string" &&
+        (customMessage.includes("unknown") || customMessage.toLowerCase().includes("not authorized"));
       return {
         title: "Access Denied",
-        message: safeMessage || "You do not have permission to perform this action.",
+        message:
+          safeMessage ||
+          "You do not have permission to perform this action. Please log in with an Admin account.",
+        isAuthError: isUnknownRole,
       };
+    }
 
     case 404:
       return {
