@@ -156,6 +156,19 @@ function ImportantNotice() {
         const { name, value, files } = e.target;
         if (name === 'document') {
             setFormData(prev => ({ ...prev, [name]: files[0] }));
+        } else if (name === 'Type') {
+            if (value.length > 120) {
+                toast({
+                    title: "Character Limit Reached",
+                    description: "Category cannot exceed 120 characters.",
+                    status: "warning",
+                    duration: 2500,
+                    isClosable: true
+                });
+                setFormData(prev => ({ ...prev, [name]: value.slice(0, 120) }));
+            } else {
+                setFormData(prev => ({ ...prev, [name]: value }));
+            }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -239,9 +252,39 @@ function ImportantNotice() {
                                     <FormLabel color="gray.700">Notice Title</FormLabel>
                                     <Input name="Notice_title" placeholder="Notice Title" value={formData.Notice_title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
                                 </FormControl>
-                                <FormControl isRequired>
-                                    <FormLabel color="gray.700">Type</FormLabel>
-                                    <Input name="Type" placeholder="Notice Type (e.g. General, Circular, Announcement)" value={formData.Type} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor }} />
+                                <FormControl isRequired isInvalid={(formData.Type || "").length >= 120}>
+                                    <Flex justify="space-between" align="center" mb={1}>
+                                        <FormLabel color="gray.700" mb={0}>Category / Type</FormLabel>
+                                        <Text
+                                            fontSize="xs"
+                                            fontWeight="bold"
+                                            color={(formData.Type || "").length >= 120 ? "red.500" : (formData.Type || "").length > 100 ? "orange.500" : "gray.500"}
+                                        >
+                                            {(formData.Type || "").length}/120 characters
+                                        </Text>
+                                    </Flex>
+                                    <Input
+                                        name="Type"
+                                        placeholder="Notice Category / Type (Max 120 characters)"
+                                        value={formData.Type}
+                                        maxLength={120}
+                                        onChange={handleInputChange}
+                                        borderColor={(formData.Type || "").length >= 120 ? "red.400" : `${customColor}50`}
+                                        _hover={{ borderColor: (formData.Type || "").length >= 120 ? "red.500" : customColor }}
+                                        _focus={{
+                                            borderColor: (formData.Type || "").length >= 120 ? "red.500" : customColor,
+                                            boxShadow: (formData.Type || "").length >= 120 ? "0 0 0 1px red" : `0 0 0 1px ${customColor}`
+                                        }}
+                                    />
+                                    {(formData.Type || "").length >= 120 ? (
+                                        <Text fontSize="xs" color="red.500" mt={1} fontWeight="600">
+                                            ⚠️ Maximum limit reached (120 characters allowed).
+                                        </Text>
+                                    ) : (
+                                        <Text fontSize="xs" color="gray.500" mt={1}>
+                                            Maximum 120 characters allowed ({120 - (formData.Type || "").length} remaining).
+                                        </Text>
+                                    )}
                                 </FormControl>
                                 <FormControl isRequired>
                                     <FormLabel color="gray.700">Date</FormLabel>

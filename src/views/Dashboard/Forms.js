@@ -222,7 +222,7 @@ function Forms() {
                                 <Button variant="ghost" leftIcon={<FaArrowLeft />} onClick={handleBackToList} mr={4} color={customColor} _hover={{ bg: `${customColor}10` }}>
                                     Back
                                 </Button>
-                                <Heading size="md" color="gray.700">{currentView === "add" ? "Create Form / Loan" : "Edit Form / Loan"}</Heading>
+                                <Heading size="md" color="gray.700">{currentView === "add" ? "Create Form / Loan / Membership" : "Edit Form / Loan / Membership"}</Heading>
                             </Flex>
                         </Flex>
                     </CardHeader>
@@ -231,13 +231,14 @@ function Forms() {
                             <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mb={4}>
                                 <FormControl isRequired>
                                     <FormLabel color="gray.700">Title</FormLabel>
-                                    <Input name="title" placeholder="Form or Loan Title" value={formData.title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
+                                    <Input name="title" placeholder="Title (Form, Loan, or Membership)" value={formData.title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
                                 </FormControl>
                                 <FormControl isRequired>
                                     <FormLabel color="gray.700">Type</FormLabel>
                                     <Select name="type" value={formData.type} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor }}>
                                         <option value="form">Form</option>
                                         <option value="loan">Loan</option>
+                                        <option value="membership">Membership</option>
                                     </Select>
                                 </FormControl>
                                 <FormControl>
@@ -284,7 +285,7 @@ function Forms() {
             <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
                 <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
                     <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
-                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Forms / Loans Table</Text>
+                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Forms / Loans / Membership Table</Text>
                         <Button
                             bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
                             color="white"
@@ -309,7 +310,7 @@ function Forms() {
                             <Flex align="center" gap="8px">
                                 <Icon as={FaPlus} boxSize="13px" />
                                 <Text fontSize="sm" fontWeight="600" letterSpacing="0.2px">
-                                    Add Form / Loan
+                                    Add Document
                                 </Text>
                             </Flex>
                         </Button>
@@ -336,7 +337,7 @@ function Forms() {
                                             <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
                                             <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{form.title}</Text></Td>
                                             <Td>
-                                                <Badge colorScheme={form.type === 'loan' ? 'green' : 'blue'}>
+                                                <Badge colorScheme={form.type === 'loan' ? 'green' : form.type === 'membership' ? 'purple' : 'blue'} px={2} py={1} borderRadius="md">
                                                     {form.type ? form.type.toUpperCase() : "FORM"}
                                                 </Badge>
                                             </Td>
