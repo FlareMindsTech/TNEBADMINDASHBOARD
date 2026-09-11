@@ -24,7 +24,10 @@ import Forms from "views/Dashboard/Forms.js";
 import ImportantNotice from "views/Dashboard/ImportantNotice.js";
 import BoardProceedings from "views/Dashboard/BoardProceedings.js";
 import Committees from "views/Dashboard/Committees.js";
-import { FaFileAlt, FaBullhorn, FaClipboardList, FaUsers } from "react-icons/fa";
+import ActRegulations from "views/Dashboard/ActRegulations.js";
+import DistributionInstructions from "views/Dashboard/DistributionInstructions.js";
+import Technical from "views/Dashboard/Technical.js";
+import { FaFileAlt, FaBullhorn, FaClipboardList, FaUsers, FaInfoCircle, FaGavel, FaCogs } from "react-icons/fa";
 
 const ICON_COLOR = "#0A3D91";
 
@@ -108,10 +111,38 @@ var dashRoutes = [
     layout: "/admin",
   },
   {
+    collapse: true,
+    name: "General Info",
+    icon: <FaInfoCircle color={ICON_COLOR} />,
+    views: [
+      {
+        path: "/act-regulations",
+        name: "Act & Regulations",
+        icon: <FaGavel color={ICON_COLOR} />,
+        element: <ActRegulations />,
+        layout: "/admin",
+      },
+      {
+        path: "/distribution-instructions",
+        name: "Distribution Instructions",
+        icon: <FaClipboardList color={ICON_COLOR} />,
+        element: <DistributionInstructions />,
+        layout: "/admin",
+      },
+    ],
+  },
+  {
     path: "/committees",
     name: "Committees & Wings",
     icon: <FaUsers color={ICON_COLOR} />,
     element: <Committees />,
+    layout: "/admin",
+  },
+  {
+    path: "/technical",
+    name: "Technical",
+    icon: <FaCogs color={ICON_COLOR} />,
+    element: <Technical />,
     layout: "/admin",
   },
   // {

@@ -41,7 +41,11 @@ export default function Dashboard(props) {
 
   // Filter routes based on user role
   const getFilteredRoutes = (routes) => {
-    return routes.filter(route => route.layout === "/admin");
+    return routes.filter(
+      (route) =>
+        route.layout === "/admin" ||
+        (route.collapse && route.views && route.views.some((v) => v.layout === "/admin"))
+    );
   };
 
   // ✅ Only include routes with layout "/admin" — skip auth routes

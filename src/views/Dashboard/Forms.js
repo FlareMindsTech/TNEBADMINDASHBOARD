@@ -75,11 +75,22 @@ function Forms() {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Search & Filter state
+    const [selectedTypeFilter, setSelectedTypeFilter] = useState("ALL");
+    const [searchQuery, setSearchQuery] = useState("");
+
+    // Calculate filtered forms
+    const filteredForms = forms.filter((form) => {
+        const matchesType = selectedTypeFilter === "ALL" || form.type === selectedTypeFilter;
+        const matchesSearch = !searchQuery || (form.title && form.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        return matchesType && matchesSearch;
+    });
+
     // Calculate pagination
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentForms = forms.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(forms.length / itemsPerPage);
+    const currentForms = filteredForms.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.max(1, Math.ceil(filteredForms.length / itemsPerPage));
 
     const handleNextPage = () => {
         if (currentPage < totalPages) {
@@ -172,10 +183,10 @@ function Forms() {
         try {
             if (currentView === "edit" && editingForm) {
                 await updateForm(editingForm._id, data);
-                toast({ title: "Form updated successfully", status: "success", duration: 3000 });
+                toast({ title: "Document updated successfully", status: "success", duration: 3000 });
             } else {
                 await createForm(data);
-                toast({ title: "Form created successfully", status: "success", duration: 3000 });
+                toast({ title: "Document created successfully", status: "success", duration: 3000 });
             }
             fetchForms();
             handleBackToList();
@@ -202,13 +213,29 @@ function Forms() {
         setIsDeleting(true);
         try {
             await deleteForm(deleteTarget);
-            toast({ title: "Form deleted successfully", status: "success", duration: 2000 });
+            toast({ title: "Document deleted successfully", status: "success", duration: 2000 });
             fetchForms();
             closeDeleteModal();
         } catch (error) {
             showErrorToast(toast, error, { title: "Delete Failed" });
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const getTypeBadgeProps = (type) => {
+        switch (type) {
+            case "loan":
+                return { colorScheme: "green", label: "LOAN" };
+            case "membership":
+                return { colorScheme: "purple", label: "MEMBERSHIP" };
+            case "wage&division":
+                return { colorScheme: "teal", label: "WAGE & DIVISION" };
+            case "noc":
+                return { colorScheme: "orange", label: "NOC" };
+            case "form":
+            default:
+                return { colorScheme: "blue", label: "FORM" };
         }
     };
 
@@ -222,7 +249,9 @@ function Forms() {
                                 <Button variant="ghost" leftIcon={<FaArrowLeft />} onClick={handleBackToList} mr={4} color={customColor} _hover={{ bg: `${customColor}10` }}>
                                     Back
                                 </Button>
-                                <Heading size="md" color="gray.700">{currentView === "add" ? "Create Form / Loan / Membership" : "Edit Form / Loan / Membership"}</Heading>
+                                <Heading size="md" color="gray.700">
+                                    {currentView === "add" ? "Create Document" : "Edit Document"}
+                                </Heading>
                             </Flex>
                         </Flex>
                     </CardHeader>
@@ -231,7 +260,7 @@ function Forms() {
                             <SimpleGrid columns={{ base: 1, md: 1 }} spacing={4} mb={4}>
                                 <FormControl isRequired>
                                     <FormLabel color="gray.700">Title</FormLabel>
-                                    <Input name="title" placeholder="Title (Form, Loan, or Membership)" value={formData.title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
+                                    <Input name="title" placeholder="Document title" value={formData.title} onChange={handleInputChange} borderColor={`${customColor}50`} _hover={{ borderColor: customColor }} _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }} />
                                 </FormControl>
                                 <FormControl isRequired>
                                     <FormLabel color="gray.700">Type</FormLabel>
@@ -239,6 +268,8 @@ function Forms() {
                                         <option value="form">Form</option>
                                         <option value="loan">Loan</option>
                                         <option value="membership">Membership</option>
+                                        <option value="wage&division">Wage & Division</option>
+                                        <option value="noc">NOC</option>
                                     </Select>
                                 </FormControl>
                                 <FormControl>
@@ -252,7 +283,7 @@ function Forms() {
                                 </FormControl>
                             </SimpleGrid>
                             <Button type="submit" isLoading={loading} bg={customColor} color="white" _hover={{ bg: customHoverColor }} mt={4} width="100%">
-                                {currentView === "add" ? "Create" : "Update"}
+                                {currentView === "add" ? "Create Document" : "Update Document"}
                             </Button>
                         </Box>
                     </CardBody>
@@ -262,8 +293,8 @@ function Forms() {
     }
 
     const renderStats = () => (
-        <Flex flexDirection={{ base: "column", sm: "row" }} gap={4} mb={4} w="100%">
-            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "100%", sm: "240px", md: "30%", lg: "25%" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s">
+        <Flex flexDirection={{ base: "column", sm: "row" }} gap={4} mb={4} w="100%" flexWrap="wrap">
+            <Card minH="83px" cursor="pointer" bg="white" w={{ base: "100%", sm: "240px" }} border={`1px solid ${customColor}30`} _hover={{ borderColor: customColor, transform: "translateY(-4px)" }} transition="all 0.2s" onClick={() => setSelectedTypeFilter("ALL")}>
                 <CardBody>
                     <Flex align="center" justify="space-between">
                         <Stat>
@@ -285,7 +316,10 @@ function Forms() {
             <Card overflowX={{ sm: "scroll", xl: "hidden" }} flex="1" display="flex" flexDirection="column" overflow="hidden" mb={4}>
                 <CardHeader p={{ base: "14px 16px", md: "18px 24px" }} flexShrink={0}>
                     <Flex justify="space-between" align={{ base: "stretch", sm: "center" }} direction={{ base: "column", sm: "row" }} gap={3} w="100%">
-                        <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Forms / Loans / Membership Table</Text>
+                        <Flex direction="column">
+                            <Text fontSize={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">Forms & Documents Management</Text>
+                            <Text fontSize="xs" color="gray.500">Manage Forms, Loans, Memberships, Wage & Division, and NOC documents</Text>
+                        </Flex>
                         <Button
                             bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
                             color="white"
@@ -315,6 +349,37 @@ function Forms() {
                             </Flex>
                         </Button>
                     </Flex>
+                    {/* Filters Row */}
+                    <Flex gap={3} mt={4} direction={{ base: "column", sm: "row" }}>
+                        <Input
+                            placeholder="Search by title..."
+                            size="sm"
+                            maxW={{ base: "100%", sm: "260px" }}
+                            borderRadius="8px"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        />
+                        <Select
+                            size="sm"
+                            maxW={{ base: "100%", sm: "200px" }}
+                            borderRadius="8px"
+                            value={selectedTypeFilter}
+                            onChange={(e) => {
+                                setSelectedTypeFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="ALL">All Types</option>
+                            <option value="form">Form</option>
+                            <option value="loan">Loan</option>
+                            <option value="membership">Membership</option>
+                            <option value="wage&division">Wage & Division</option>
+                            <option value="noc">NOC</option>
+                        </Select>
+                    </Flex>
                 </CardHeader>
                 <CardBody display="flex" flexDirection="column" flex="1" overflow="hidden" p={0}>
                     {loading && forms.length === 0 ? (
@@ -332,32 +397,35 @@ function Forms() {
                                     </Tr>
                                 </Thead>
                                 <Tbody>
-                                    {currentForms.map((form, index) => (
-                                        <Tr key={form._id}>
-                                            <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                            <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{form.title}</Text></Td>
-                                            <Td>
-                                                <Badge colorScheme={form.type === 'loan' ? 'green' : form.type === 'membership' ? 'purple' : 'blue'} px={2} py={1} borderRadius="md">
-                                                    {form.type ? form.type.toUpperCase() : "FORM"}
-                                                </Badge>
-                                            </Td>
-                                            <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{form.createdAt ? form.createdAt.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
-                                            <Td textAlign="center">
-                                                <Flex justify="center">
-                                                    {form.pdfUrl && (
-                                                        <Button as="a" href={form.pdfUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
-                                                            <Icon as={FaFilePdf} />
-                                                        </Button>
-                                                    )}
-                                                    <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditForm(form)}><Icon as={FaEdit} /></Button>
-                                                    <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(form._id)}><Icon as={FaTrash} /></Button>
-                                                </Flex>
-                                            </Td>
-                                        </Tr>
-                                    ))}
-                                    {forms.length === 0 && (
+                                    {currentForms.map((form, index) => {
+                                        const badgeProps = getTypeBadgeProps(form.type);
+                                        return (
+                                            <Tr key={form._id}>
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{form.title}</Text></Td>
+                                                <Td>
+                                                    <Badge colorScheme={badgeProps.colorScheme} px={2} py={1} borderRadius="md">
+                                                        {badgeProps.label}
+                                                    </Badge>
+                                                </Td>
+                                                <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{form.createdAt ? form.createdAt.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
+                                                <Td textAlign="center">
+                                                    <Flex justify="center">
+                                                        {form.pdfUrl && (
+                                                            <Button as="a" href={form.pdfUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
+                                                                <Icon as={FaFilePdf} />
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditForm(form)}><Icon as={FaEdit} /></Button>
+                                                        <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(form._id)}><Icon as={FaTrash} /></Button>
+                                                    </Flex>
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })}
+                                    {filteredForms.length === 0 && (
                                         <Tr>
-                                            <Td colSpan={5} textAlign="center" py={4}>No forms or loans found.</Td>
+                                            <Td colSpan={5} textAlign="center" py={4}>No forms or documents found matching the filter.</Td>
                                         </Tr>
                                     )}
                                 </Tbody>

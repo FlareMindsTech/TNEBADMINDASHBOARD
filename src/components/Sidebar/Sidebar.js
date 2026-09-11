@@ -3,12 +3,14 @@ import { HamburgerIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
+  Collapse,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerOverlay,
   Flex,
+  Icon,
   Stack,
   Text,
   useColorMode,
@@ -34,10 +36,143 @@ import {
 } from "components/Scrollbar/Scrollbar";
 import { HSeparator } from "components/Separator/Separator";
 import { SidebarHelp } from "components/Sidebar/SidebarHelp";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Scrollbars } from "react-custom-scrollbars";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { FaChevronDown } from "react-icons/fa";
 import FlareMindslogo from "assets/img/fm logo.png";
+
+function SidebarCollapseItem({
+  prop,
+  activeBg,
+  inactiveBg,
+  activeColor,
+  inactiveColor,
+  sidebarActiveShadow,
+  onClose,
+}) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const isChildActive =
+    prop.views &&
+    prop.views.some(
+      (v) =>
+        currentPath === v.layout + v.path ||
+        currentPath.startsWith(v.layout + v.path + "/") ||
+        (window.location.hash && window.location.hash.includes(v.path))
+    );
+
+  const [isOpen, setIsOpen] = useState(isChildActive);
+
+  useEffect(() => {
+    if (isChildActive) {
+      setIsOpen(true);
+    }
+  }, [isChildActive, currentPath]);
+
+  return (
+    <Box mb={{ base: "4px", sm: "5px", md: "6px" }} w="100%">
+      <Button
+        boxSize="initial"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={{ base: "2px", sm: "3px", md: "4px" }}
+        mx="auto"
+        ps={{ base: "8px", sm: "9px", md: "10px", lg: "12px", xl: "16px" }}
+        pe={{ base: "12px", sm: "14px", md: "16px" }}
+        py={{ base: "8px", sm: "10px", md: "12px" }}
+        borderRadius="15px"
+        w="100%"
+        bg={isChildActive ? "rgba(10, 61, 145, 0.08)" : "transparent"}
+        color={isChildActive ? "#0A3D91" : inactiveColor}
+        _hover={{ bg: isChildActive ? "rgba(10, 61, 145, 0.12)" : "gray.50" }}
+        _active={{ bg: "transparent" }}
+        _focus={{ boxShadow: "none" }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <Flex align="center">
+          <IconBox
+            bg={isChildActive ? "#0A3D91" : inactiveBg}
+            color={isChildActive ? "white" : "blue.500"}
+            h={{ base: "24px", sm: "26px", md: "28px", lg: "30px", xl: "30px" }}
+            w={{ base: "24px", sm: "26px", md: "28px", lg: "30px", xl: "30px" }}
+            me={{ base: "8px", sm: "10px", md: "12px" }}
+            transition="all 0.2s ease-in-out"
+          >
+            {prop.icon}
+          </IconBox>
+          <Text
+            my="auto"
+            fontWeight={isChildActive ? "bold" : "600"}
+            fontSize={{ base: "xs", sm: "sm", md: "sm", lg: "sm", xl: "sm" }}
+          >
+            {document.documentElement.dir === "rtl" ? prop.rtlName : prop.name}
+          </Text>
+        </Flex>
+        <Icon
+          as={FaChevronDown}
+          boxSize="11px"
+          color={isChildActive ? "#0A3D91" : "gray.400"}
+          transform={isOpen ? "rotate(180deg)" : "rotate(0deg)"}
+          transition="transform 0.2s ease-in-out"
+        />
+      </Button>
+
+      <Collapse in={isOpen} animateOpacity>
+        <Stack spacing={1} pl={{ base: "10px", sm: "12px", md: "14px", lg: "16px" }} mt={1} mb={2}>
+          {prop.views &&
+            prop.views.map((child, childKey) => (
+              <NavLink to={child.layout + child.path} key={childKey} onClick={onClose}>
+                {({ isActive }) => (
+                  <Button
+                    boxSize="initial"
+                    justifyContent="flex-start"
+                    alignItems="center"
+                    ps={{ base: "8px", sm: "9px", md: "10px", lg: "12px" }}
+                    py={{ base: "6px", sm: "8px", md: "9px" }}
+                    borderRadius="12px"
+                    w="100%"
+                    bg={isActive ? activeBg : "transparent"}
+                    color={isActive ? activeColor : inactiveColor}
+                    boxShadow={isActive ? sidebarActiveShadow : "none"}
+                    _hover={{
+                      bg: isActive ? activeBg : "gray.50",
+                    }}
+                    _active={{
+                      bg: activeBg,
+                      transform: "none",
+                      borderColor: "transparent",
+                    }}
+                    _focus={{ boxShadow: "none" }}
+                  >
+                    <Flex align="center">
+                      <IconBox
+                        bg={isActive ? "white" : inactiveBg}
+                        color={isActive ? "#0A3D91" : "blue.500"}
+                        h="22px"
+                        w="22px"
+                        me="10px"
+                        transition="all 0.2s ease-in-out"
+                      >
+                        {child.icon}
+                      </IconBox>
+                      <Text
+                        my="auto"
+                        fontSize={{ base: "xs", sm: "xs", md: "sm" }}
+                        fontWeight={isActive ? "bold" : "500"}
+                      >
+                        {document.documentElement.dir === "rtl" ? child.rtlName : child.name}
+                      </Text>
+                    </Flex>
+                  </Button>
+                )}
+              </NavLink>
+            ))}
+        </Stack>
+      </Collapse>
+    </Box>
+  );
+}
 
 function Sidebar(props) {
   const { sidebarVariant, logo, routes } = props;
@@ -103,6 +238,20 @@ function Sidebar(props) {
   const createLinks = (routes) =>
     routes.map((prop, key) => {
       if (prop.redirect) return null;
+
+      if (prop.collapse) {
+        return (
+          <SidebarCollapseItem
+            key={key}
+            prop={prop}
+            activeBg={activeBg}
+            inactiveBg={inactiveBg}
+            activeColor={activeColor}
+            inactiveColor={inactiveColor}
+            sidebarActiveShadow={sidebarActiveShadow}
+          />
+        );
+      }
 
       if (prop.category) {
         return (
@@ -560,6 +709,21 @@ export function SidebarResponsive(props) {
   const createLinks = (routes) =>
     routes.map((prop, key) => {
       if (prop.redirect) return null;
+      if (prop.collapse) {
+        return (
+          <SidebarCollapseItem
+            key={key}
+            prop={prop}
+            activeBg={activeBg}
+            inactiveBg={inactiveBg}
+            activeColor={activeColor}
+            inactiveColor={inactiveColor}
+            sidebarActiveShadow={sidebarActiveShadow}
+            onClose={onClose}
+          />
+        );
+      }
+
       if (prop.category) {
         return (
           <React.Fragment key={key}>

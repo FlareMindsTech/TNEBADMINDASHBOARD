@@ -645,3 +645,215 @@ export const deleteBoardProceeding = async (id) => {
   });
 };
 
+// ----- Act & Regulation APIs -----
+export const getAllActRegulations = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?search=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/act-regulations${queryString}`, { method: "GET" });
+};
+
+export const getActRegulationById = async (id) => {
+  return apiRequest(`/act-regulations/${id}`, { method: "GET" });
+};
+
+export const createActRegulation = async (formData) => {
+  return apiRequest("/act-regulations", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateActRegulation = async (id, formData) => {
+  return apiRequest(`/act-regulations/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteActRegulation = async (id) => {
+  return apiRequest(`/act-regulations/${id}`, {
+    method: "DELETE",
+  });
+};
+
+// ----- Distribution Instruction APIs -----
+export const getAllDistributionInstructions = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?search=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/distribution-instructions${queryString}`, { method: "GET" });
+};
+
+export const getDistributionInstructionById = async (id) => {
+  return apiRequest(`/distribution-instructions/${id}`, { method: "GET" });
+};
+
+export const createDistributionInstruction = async (formData) => {
+  return apiRequest("/distribution-instructions", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateDistributionInstruction = async (id, formData) => {
+  return apiRequest(`/distribution-instructions/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteDistributionInstruction = async (id) => {
+  return apiRequest(`/distribution-instructions/${id}`, {
+    method: "DELETE",
+  });
+};
+
+// ----- Technical Q&A APIs -----
+export const getAllTechnicalQA = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?search=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/technical-qa${queryString}`, { method: "GET" });
+};
+
+export const getTechnicalQAById = async (id) => {
+  return apiRequest(`/technical-qa/${id}`, { method: "GET" });
+};
+
+export const createTechnicalQA = async (formData) => {
+  return apiRequest("/technical-qa", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateTechnicalQA = async (id, formData) => {
+  return apiRequest(`/technical-qa/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteTechnicalQA = async (id) => {
+  return apiRequest(`/technical-qa/${id}`, {
+    method: "DELETE",
+  });
+};
+
+// ----- Technical Parameters APIs -----
+export const getAllTechnicalParameters = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?search=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.category && params.category !== "ALL") searchParams.append("category", params.category);
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/technical-parameters${queryString}`, { method: "GET" });
+};
+
+export const getTechnicalParameterById = async (id) => {
+  return apiRequest(`/technical-parameters/${id}`, { method: "GET" });
+};
+
+export const createTechnicalParameter = async (formData) => {
+  return apiRequest("/technical-parameters", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateTechnicalParameter = async (id, formData) => {
+  return apiRequest(`/technical-parameters/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteTechnicalParameter = async (id) => {
+  return apiRequest(`/technical-parameters/${id}`, {
+    method: "DELETE",
+  });
+};
+
+// ----- Technical Books & Manuals APIs -----
+export const getAllTechnicalBooks = async (params = {}) => {
+  let queryString = "";
+  if (typeof params === "string") {
+    queryString = params ? `?search=${encodeURIComponent(params)}` : "";
+  } else if (typeof params === "object" && params !== null) {
+    const searchParams = new URLSearchParams();
+    if (params.tag && params.tag !== "ALL") searchParams.append("tag", params.tag);
+    if (params.search) searchParams.append("search", params.search);
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params.order) searchParams.append("order", params.order);
+    const qs = searchParams.toString();
+    queryString = qs ? `?${qs}` : "";
+  }
+  return apiRequest(`/technical-books${queryString}`, { method: "GET" });
+};
+
+export const getTechnicalBookById = async (id) => {
+  return apiRequest(`/technical-books/${id}`, { method: "GET" });
+};
+
+export const createTechnicalBook = async (formData) => {
+  return apiRequest("/technical-books", {
+    method: "POST",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const updateTechnicalBook = async (id, formData) => {
+  return apiRequest(`/technical-books/${id}`, {
+    method: "PUT",
+    body: formData,
+    isFormData: true,
+  });
+};
+
+export const deleteTechnicalBook = async (id) => {
+  return apiRequest(`/technical-books/${id}`, {
+    method: "DELETE",
+  });
+};
+
