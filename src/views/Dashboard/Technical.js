@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Button,
@@ -38,11 +39,6 @@ import {
   VStack,
   Tooltip,
   Textarea,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   Wrap,
   WrapItem,
   Tag,
@@ -101,7 +97,17 @@ const PARAMETER_CATEGORIES = [
   "Standards & Codes",
 ];
 
-function Technical() {
+function Technical({ initialTab = 0 }) {
+  const location = useLocation();
+
+  const getTabFromLocation = () => {
+    const path = (location && location.pathname) || "";
+    if (path.includes("technical-parameters") || path.includes("technical-parament")) return 1;
+    if (path.includes("technical-qa")) return 0;
+    if (path.includes("technical-books") || path.includes("book")) return 2;
+    return initialTab;
+  };
+
   const textColor = useColorModeValue("gray.700", "white");
   const bgCard = useColorModeValue("white", "gray.800");
   const tableBorderColor = useColorModeValue("gray.200", "gray.600");
@@ -110,7 +116,13 @@ function Technical() {
   const toast = useToast();
 
   // Active section tab index: 0 = QA, 1 = Parameters, 2 = Books
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(getTabFromLocation());
+
+  useEffect(() => {
+    setActiveTab(getTabFromLocation());
+    setCurrentView("list");
+    setEditingItem(null);
+  }, [location.pathname, initialTab]);
 
   // Data states for 3 sections
   const [qaList, setQaList] = useState([]);
@@ -755,10 +767,18 @@ function Technical() {
                 </Flex>
                 <Box>
                   <Heading size="md" color={textColor} fontWeight="bold">
-                    Technical Management
+                    {activeTab === 0
+                      ? "Technical Q & A"
+                      : activeTab === 1
+                      ? "Technical Parameters"
+                      : "Technical Books & Manuals"}
                   </Heading>
                   <Text fontSize="sm" color="gray.500">
-                    Manage Technical Q&A, Technical Parameters, and Books & Manuals in one unified dashboard.
+                    {activeTab === 0
+                      ? "Manage frequently asked questions, answers, and technical guidelines."
+                      : activeTab === 1
+                      ? "Manage technical specifications, categories, and parameters."
+                      : "Manage technical books, reference manuals, and documentation."}
                   </Text>
                 </Box>
               </Flex>
@@ -799,59 +819,6 @@ function Technical() {
         </CardHeader>
 
         <CardBody>
-          {/* SECTION SWITCHER TABS (Only shown in list view) */}
-          {currentView === "list" && (
-            <Tabs
-              index={activeTab}
-              onChange={handleTabChange}
-              variant="soft-rounded"
-              colorScheme="blue"
-              mb="24px"
-            >
-              <TabList
-                bg={useColorModeValue("gray.100", "gray.700")}
-                p="4px"
-                borderRadius="12px"
-                overflowX="auto"
-                w="fit-content"
-                maxW="100%"
-              >
-                <Tab
-                  fontSize="sm"
-                  fontWeight="600"
-                  borderRadius="8px"
-                  _selected={{ color: "white", bg: customColor, boxShadow: "sm" }}
-                >
-                  <Icon as={FaQuestionCircle} mr={2} /> Technical Q & A
-                  <Badge ml={2} colorScheme={activeTab === 0 ? "blue" : "gray"} borderRadius="full">
-                    {qaList.length}
-                  </Badge>
-                </Tab>
-                <Tab
-                  fontSize="sm"
-                  fontWeight="600"
-                  borderRadius="8px"
-                  _selected={{ color: "white", bg: customColor, boxShadow: "sm" }}
-                >
-                  <Icon as={FaSlidersH} mr={2} /> Technical Parameters
-                  <Badge ml={2} colorScheme={activeTab === 1 ? "blue" : "gray"} borderRadius="full">
-                    {paramList.length}
-                  </Badge>
-                </Tab>
-                <Tab
-                  fontSize="sm"
-                  fontWeight="600"
-                  borderRadius="8px"
-                  _selected={{ color: "white", bg: customColor, boxShadow: "sm" }}
-                >
-                  <Icon as={FaBook} mr={2} /> Technical Books & Manuals
-                  <Badge ml={2} colorScheme={activeTab === 2 ? "blue" : "gray"} borderRadius="full">
-                    {bookList.length}
-                  </Badge>
-                </Tab>
-              </TabList>
-            </Tabs>
-          )}
 
           {/* ======================================================== */}
           {/* SECTION 1: TECHNICAL Q&A                                  */}

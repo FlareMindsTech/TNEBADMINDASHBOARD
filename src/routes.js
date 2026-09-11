@@ -27,7 +27,18 @@ import Committees from "views/Dashboard/Committees.js";
 import ActRegulations from "views/Dashboard/ActRegulations.js";
 import DistributionInstructions from "views/Dashboard/DistributionInstructions.js";
 import Technical from "views/Dashboard/Technical.js";
-import { FaFileAlt, FaBullhorn, FaClipboardList, FaUsers, FaInfoCircle, FaGavel, FaCogs } from "react-icons/fa";
+import {
+  FaFileAlt,
+  FaBullhorn,
+  FaClipboardList,
+  FaUsers,
+  FaInfoCircle,
+  FaGavel,
+  FaCogs,
+  FaSlidersH,
+  FaQuestionCircle,
+  FaBook,
+} from "react-icons/fa";
 
 const ICON_COLOR = "#0A3D91";
 
@@ -139,10 +150,30 @@ var dashRoutes = [
     layout: "/admin",
   },
   {
+    path: "/technical-parameters",
+    name: "Technical Parameter",
+    icon: <FaSlidersH color={ICON_COLOR} />,
+    element: <Technical initialTab={1} />,
+    layout: "/admin",
+  },
+  {
+    path: "/technical-qa",
+    name: "Technical QA",
+    icon: <FaQuestionCircle color={ICON_COLOR} />,
+    element: <Technical initialTab={0} />,
+    layout: "/admin",
+  },
+  {
+    path: "/technical-books",
+    name: "Book and Manuals",
+    icon: <FaBook color={ICON_COLOR} />,
+    element: <Technical initialTab={2} />,
+    layout: "/admin",
+  },
+  {
     path: "/technical",
     name: "Technical",
-    icon: <FaCogs color={ICON_COLOR} />,
-    element: <Technical />,
+    element: <Technical initialTab={1} />,
     layout: "/admin",
   },
   // {

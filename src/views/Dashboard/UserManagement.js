@@ -806,6 +806,7 @@ function UserManagement() {
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
+                <option value="technical admin">Technical Admin</option>
                 <option value="super admin">Super Admin</option>
               </Select>
             </FormControl>

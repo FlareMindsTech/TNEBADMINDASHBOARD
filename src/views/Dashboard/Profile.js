@@ -74,6 +74,8 @@ const getRoleColor = (role) => {
   switch (role?.toLowerCase()) {
     case 'super admin':
     case 'superadmin': return 'purple';
+    case 'technical admin':
+    case 'technical_admin': return 'teal';
     case 'admin': return 'blue';
     case 'user': return 'green';
     case 'moderator': return 'orange';

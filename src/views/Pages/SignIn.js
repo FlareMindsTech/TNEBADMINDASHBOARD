@@ -192,7 +192,11 @@ function AdminLogin() {
         isClosable: true,
       });
 
-      window.location.href = "#/admin/admin-management";
+      if (role?.toLowerCase() === "technical admin" || role?.toLowerCase() === "technical_admin") {
+        window.location.href = "#/admin/technical-parameters";
+      } else {
+        window.location.href = "#/admin/admin-management";
+      }
     } catch (err) {
       showErrorToast(toast, err, { title: "Access Denied" });
     } finally {

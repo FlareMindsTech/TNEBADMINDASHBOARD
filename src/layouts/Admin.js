@@ -41,6 +41,26 @@ export default function Dashboard(props) {
 
   // Filter routes based on user role
   const getFilteredRoutes = (routes) => {
+    let userRole = "admin";
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        userRole = u.role ? u.role.toLowerCase() : "admin";
+      }
+    } catch (e) {}
+
+    if (userRole === "technical admin" || userRole === "technical_admin") {
+      return routes.filter(
+        (route) =>
+          route.path === "/technical-parameters" ||
+          route.path === "/technical-qa" ||
+          route.path === "/technical-books" ||
+          route.path === "/technical" ||
+          route.path === "/profile"
+      );
+    }
+
     return routes.filter(
       (route) =>
         route.layout === "/admin" ||
@@ -215,7 +235,26 @@ export default function Dashboard(props) {
                 {getRoutes(routes)}
                 <Route
                   path="/admin"
-                  element={<Navigate to="/admin/admin-management" replace />}
+                  element={
+                    <Navigate
+                      to={
+                        (() => {
+                          try {
+                            const userStr = localStorage.getItem("user");
+                            if (userStr) {
+                              const u = JSON.parse(userStr);
+                              const role = u.role ? u.role.toLowerCase() : "admin";
+                              if (role === "technical admin" || role === "technical_admin") {
+                                return "/admin/technical-parameters";
+                              }
+                            }
+                          } catch (e) {}
+                          return "/admin/admin-management";
+                        })()
+                      }
+                      replace
+                    />
+                  }
                 />
               </Routes>
             </PanelContainer>

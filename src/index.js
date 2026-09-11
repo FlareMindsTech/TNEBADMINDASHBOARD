@@ -25,7 +25,19 @@ ReactDOM.render(
           path="/"
           element={
             localStorage.getItem("token") ? (
-              <Navigate to="/admin/admin-management" replace />
+              (() => {
+                try {
+                  const userStr = localStorage.getItem("user");
+                  if (userStr) {
+                    const u = JSON.parse(userStr);
+                    const role = u.role ? u.role.toLowerCase() : "admin";
+                    if (role === "technical admin" || role === "technical_admin") {
+                      return <Navigate to="/admin/technical-parameters" replace />;
+                    }
+                  }
+                } catch (e) {}
+                return <Navigate to="/admin/admin-management" replace />;
+              })()
             ) : (
               <Navigate to="/auth/signin" replace />
             )
