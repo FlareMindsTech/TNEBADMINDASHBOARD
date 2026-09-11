@@ -96,6 +96,7 @@ function BoardProceedings() {
   const [formData, setFormData] = useState({
     title: "",
     category: "BP's & Orders",
+    date: new Date().toISOString().split("T")[0],
     document: null,
   });
 
@@ -111,8 +112,8 @@ function BoardProceedings() {
 
       // Sort descending by date/createdAt
       const sorted = [...list].sort((a, b) => {
-        const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
-        const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+        const dateA = new Date(a.date || a.createdAt || a.updatedAt || 0).getTime();
+        const dateB = new Date(b.date || b.createdAt || b.updatedAt || 0).getTime();
         if (dateA && dateB && dateA !== dateB && !isNaN(dateA) && !isNaN(dateB)) {
           return dateB - dateA;
         }
@@ -179,6 +180,7 @@ function BoardProceedings() {
     setFormData({
       title: "",
       category: "BP's & Orders",
+      date: new Date().toISOString().split("T")[0],
       document: null,
     });
     setCurrentView("add");
@@ -186,9 +188,16 @@ function BoardProceedings() {
 
   const handleEditProceeding = (item) => {
     setEditingProceeding(item);
+    const itemDate = item.date
+      ? new Date(item.date).toISOString().split("T")[0]
+      : item.createdAt
+      ? new Date(item.createdAt).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
     setFormData({
       title: item.title || "",
       category: item.category || "BP's & Orders",
+      date: itemDate,
       document: null, // Reset file input, keep existing unless replaced
     });
     setCurrentView("edit");
@@ -220,6 +229,9 @@ function BoardProceedings() {
     const data = new FormData();
     data.append("title", formData.title.trim());
     data.append("category", formData.category);
+    if (formData.date) {
+      data.append("date", formData.date);
+    }
     if (formData.document) {
       data.append("document", formData.document);
     }
@@ -497,6 +509,22 @@ function BoardProceedings() {
                   </Select>
                 </FormControl>
 
+                {/* Date */}
+                <FormControl>
+                  <FormLabel color="gray.700" fontWeight="600" fontSize="sm">
+                    Proceeding Date
+                  </FormLabel>
+                  <Input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    borderColor={`${customColor}50`}
+                    _hover={{ borderColor: customColor }}
+                    _focus={{ borderColor: customColor, boxShadow: `0 0 0 1px ${customColor}` }}
+                  />
+                </FormControl>
+
                 {/* Document File */}
                 <FormControl>
                   <FormLabel color="gray.700" fontWeight="600" fontSize="sm">
@@ -756,7 +784,9 @@ function BoardProceedings() {
                         </Td>
                         <Td>
                           <Text fontSize="xs" color="gray.600" whiteSpace="nowrap">
-                            {item.createdAt
+                            {item.date
+                              ? item.date.split("T")[0].split("-").reverse().join("-")
+                              : item.createdAt
                               ? item.createdAt.split("T")[0].split("-").reverse().join("-")
                               : "N/A"}
                           </Text>
