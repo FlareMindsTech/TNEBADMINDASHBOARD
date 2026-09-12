@@ -199,7 +199,7 @@ function FileUploadDropzone({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,application/pdf"
           style={{ display: "none" }}
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
@@ -262,7 +262,7 @@ function FileUploadDropzone({
               Click to browse or drag & drop file here
             </Text>
             <Text fontSize="xs" color="gray.400">
-              Supports PDF, DOC, DOCX (Max size: 25MB)
+              Supports PDF only (Max size: 25MB)
             </Text>
           </VStack>
         )}
