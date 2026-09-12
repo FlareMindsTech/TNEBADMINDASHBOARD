@@ -45,7 +45,24 @@ function AdminLogin() {
   React.useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      navigate("/admin/admin-management");
+      let isTech = false;
+      try {
+        const u = JSON.parse(localStorage.getItem("user"));
+        const roleLower = u?.role ? u.role.toLowerCase().trim() : "";
+        if (
+          roleLower === "technical admin" ||
+          roleLower === "technical_admin" ||
+          roleLower === "technicaladmin" ||
+          roleLower === "technical"
+        ) {
+          isTech = true;
+        }
+      } catch (e) {}
+      if (isTech) {
+        navigate("/admin/technical-parameters");
+      } else {
+        navigate("/admin/admin-management");
+      }
     }
   }, [navigate]);
 

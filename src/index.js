@@ -30,8 +30,13 @@ ReactDOM.render(
                   const userStr = localStorage.getItem("user");
                   if (userStr) {
                     const u = JSON.parse(userStr);
-                    const role = u.role ? u.role.toLowerCase() : "admin";
-                    if (role === "technical admin" || role === "technical_admin") {
+                    const role = u.role ? u.role.toLowerCase().trim() : "admin";
+                    if (
+                      role === "technical admin" ||
+                      role === "technical_admin" ||
+                      role === "technicaladmin" ||
+                      role === "technical"
+                    ) {
                       return <Navigate to="/admin/technical-parameters" replace />;
                     }
                   }

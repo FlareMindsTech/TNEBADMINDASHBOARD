@@ -39,18 +39,25 @@ export default function Dashboard(props) {
 
   document.documentElement.dir = "ltr";
 
+  // Determine user role
+  let userRole = "admin";
+  try {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      userRole = u.role ? u.role.toLowerCase().trim() : "admin";
+    }
+  } catch (e) {}
+
+  const isTechnicalAdmin =
+    userRole === "technical admin" ||
+    userRole === "technical_admin" ||
+    userRole === "technicaladmin" ||
+    userRole === "technical";
+
   // Filter routes based on user role
   const getFilteredRoutes = (routes) => {
-    let userRole = "admin";
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const u = JSON.parse(userStr);
-        userRole = u.role ? u.role.toLowerCase() : "admin";
-      }
-    } catch (e) {}
-
-    if (userRole === "technical admin" || userRole === "technical_admin") {
+    if (isTechnicalAdmin) {
       return routes.filter(
         (route) =>
           route.path === "/technical-parameters" ||
@@ -61,11 +68,23 @@ export default function Dashboard(props) {
       );
     }
 
-    return routes.filter(
-      (route) =>
+    // Hide technical routes from regular admin
+    return routes.filter((route) => {
+      const isTechnicalRoute =
+        route.path === "/technical-parameters" ||
+        route.path === "/technical-qa" ||
+        route.path === "/technical-books" ||
+        route.path === "/technical";
+
+      if (isTechnicalRoute) {
+        return false;
+      }
+
+      return (
         route.layout === "/admin" ||
         (route.collapse && route.views && route.views.some((v) => v.layout === "/admin"))
-    );
+      );
+    });
   };
 
   // ✅ Only include routes with layout "/admin" — skip auth routes
@@ -207,8 +226,8 @@ export default function Dashboard(props) {
         <Portal>
           <AdminNavbar
             onOpen={onSidebarOpen} // This now opens the mobile sidebar
-            brandText={getActiveRoute(routes)}
-            secondary={getActiveNavbar(routes)}
+            brandText={getActiveRoute(filteredRoutes)}
+            secondary={getActiveNavbar(filteredRoutes)}
             fixed={fixed}
             {...rest}
           />
@@ -232,25 +251,41 @@ export default function Dashboard(props) {
               }}
             >
               <Routes>
-                {getRoutes(routes)}
+                {getRoutes(filteredRoutes)}
                 <Route
                   path="/admin"
                   element={
                     <Navigate
                       to={
-                        (() => {
-                          try {
-                            const userStr = localStorage.getItem("user");
-                            if (userStr) {
-                              const u = JSON.parse(userStr);
-                              const role = u.role ? u.role.toLowerCase() : "admin";
-                              if (role === "technical admin" || role === "technical_admin") {
-                                return "/admin/technical-parameters";
-                              }
-                            }
-                          } catch (e) {}
-                          return "/admin/admin-management";
-                        })()
+                        isTechnicalAdmin
+                          ? "/admin/technical-parameters"
+                          : "/admin/admin-management"
+                      }
+                      replace
+                    />
+                  }
+                />
+                <Route
+                  path="/"
+                  element={
+                    <Navigate
+                      to={
+                        isTechnicalAdmin
+                          ? "/admin/technical-parameters"
+                          : "/admin/admin-management"
+                      }
+                      replace
+                    />
+                  }
+                />
+                <Route
+                  path="*"
+                  element={
+                    <Navigate
+                      to={
+                        isTechnicalAdmin
+                          ? "/admin/technical-parameters"
+                          : "/admin/admin-management"
                       }
                       replace
                     />
@@ -262,7 +297,7 @@ export default function Dashboard(props) {
         ) : null}
         <Portal>
           <FixedPlugin
-            secondary={getActiveNavbar(routes)}
+            secondary={getActiveNavbar(filteredRoutes)}
             fixed={fixed}
             onOpen={onPluginOpen} // This opens the plugin drawer separately
           />
