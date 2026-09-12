@@ -84,19 +84,6 @@ import {
   showErrorToast,
 } from "views/utils/axiosInstance";
 
-const PARAMETER_CATEGORIES = [
-  "General",
-  "Electrical",
-  "Mechanical",
-  "Transmission",
-  "Distribution",
-  "Safety",
-  "Substation",
-  "Renewable Energy",
-  "Tariff & Billing",
-  "Standards & Codes",
-];
-
 function Technical({ initialTab = 0 }) {
   const location = useLocation();
 
@@ -128,6 +115,17 @@ function Technical({ initialTab = 0 }) {
   const [qaList, setQaList] = useState([]);
   const [paramList, setParamList] = useState([]);
   const [bookList, setBookList] = useState([]);
+
+  // Dynamic list of unique categories extracted from the database records
+  const existingCategories = useMemo(() => {
+    const cats = new Set();
+    paramList.forEach((item) => {
+      if (item.category && item.category.trim()) {
+        cats.add(item.category.trim());
+      }
+    });
+    return Array.from(cats).sort((a, b) => a.localeCompare(b));
+  }, [paramList]);
 
   // Loading states
   const [loadingQA, setLoadingQA] = useState(false);
@@ -169,7 +167,7 @@ function Technical({ initialTab = 0 }) {
 
   const [paramFormData, setParamFormData] = useState({
     title: "",
-    category: "General",
+    category: "",
     customCategory: "",
     tag: "",
     document: null,
@@ -305,7 +303,13 @@ function Technical({ initialTab = 0 }) {
     if (activeTab === 0) {
       setQaFormData({ title: "", description: "", document: null });
     } else if (activeTab === 1) {
-      setParamFormData({ title: "", category: "General", customCategory: "", tag: "", document: null });
+      setParamFormData({
+        title: "",
+        category: "",
+        customCategory: "",
+        tag: "",
+        document: null,
+      });
     } else {
       setBookFormData({ title: "", tag: "", document: null });
     }
@@ -321,11 +325,12 @@ function Technical({ initialTab = 0 }) {
         document: null,
       });
     } else if (activeTab === 1) {
-      const isPredefined = PARAMETER_CATEGORIES.includes(item.category);
+      const itemCat = item.category ? item.category.trim() : "";
+      const isExisting = existingCategories.includes(itemCat);
       setParamFormData({
         title: item.title || "",
-        category: isPredefined ? item.category : "Other",
-        customCategory: isPredefined ? "" : item.category || "",
+        category: isExisting ? itemCat : "__new__",
+        customCategory: isExisting ? "" : itemCat,
         tag: item.tag || (Array.isArray(item.tags) ? item.tags.join(", ") : ""),
         document: null,
       });
@@ -474,14 +479,14 @@ function Technical({ initialTab = 0 }) {
     }
 
     const finalCategory =
-      paramFormData.category === "Other"
+      paramFormData.category === "__new__" || existingCategories.length === 0 || !paramFormData.category
         ? paramFormData.customCategory.trim()
         : paramFormData.category.trim();
 
     if (!finalCategory) {
       toast({
         title: "Validation Error",
-        description: "Please specify a category.",
+        description: "Please enter or select a category.",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -1136,7 +1141,7 @@ function Technical({ initialTab = 0 }) {
                         }}
                       >
                         <option value="ALL">All Categories</option>
-                        {PARAMETER_CATEGORIES.map((cat) => (
+                        {existingCategories.map((cat) => (
                           <option key={cat} value={cat}>
                             {cat}
                           </option>
@@ -1351,33 +1356,60 @@ function Technical({ initialTab = 0 }) {
                       <FormLabel fontSize="sm" fontWeight="bold">
                         Category
                       </FormLabel>
-                      <Select
-                        value={paramFormData.category}
-                        onChange={(e) => setParamFormData({ ...paramFormData, category: e.target.value })}
-                        borderRadius="10px"
-                      >
-                        {PARAMETER_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                        <option value="Other">Other (Custom Category)</option>
-                      </Select>
-                    </FormControl>
+                      {existingCategories.length > 0 ? (
+                        <VStack spacing={3} align="stretch">
+                          <Select
+                            placeholder="-- Select Existing Category --"
+                            value={paramFormData.category}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setParamFormData({
+                                ...paramFormData,
+                                category: val,
+                                customCategory: val === "__new__" ? paramFormData.customCategory : "",
+                              });
+                            }}
+                            borderRadius="10px"
+                          >
+                            {existingCategories.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
+                            <option value="__new__">+ Add New Category (Manual Entry)</option>
+                          </Select>
 
-                    {paramFormData.category === "Other" && (
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm" fontWeight="bold">
-                          Specify Custom Category
-                        </FormLabel>
+                          {(paramFormData.category === "__new__" || !paramFormData.category) && (
+                            <Input
+                              placeholder="Enter category name manually..."
+                              value={paramFormData.customCategory}
+                              onChange={(e) =>
+                                setParamFormData({ ...paramFormData, customCategory: e.target.value })
+                              }
+                              borderRadius="10px"
+                            />
+                          )}
+                        </VStack>
+                      ) : (
                         <Input
-                          placeholder="Enter custom category name..."
+                          placeholder="Enter category name manually..."
                           value={paramFormData.customCategory}
-                          onChange={(e) => setParamFormData({ ...paramFormData, customCategory: e.target.value })}
+                          onChange={(e) =>
+                            setParamFormData({
+                              ...paramFormData,
+                              category: "__new__",
+                              customCategory: e.target.value,
+                            })
+                          }
                           borderRadius="10px"
                         />
-                      </FormControl>
-                    )}
+                      )}
+                      <FormHelperText fontSize="xs">
+                        {existingCategories.length > 0
+                          ? "Select an existing category or enter a new one manually."
+                          : "Type the category name manually. Once added, it will appear in the dropdown for future items."}
+                      </FormHelperText>
+                    </FormControl>
 
                     <FormControl>
                       <FormLabel fontSize="sm" fontWeight="bold">
