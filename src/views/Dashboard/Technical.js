@@ -35,6 +35,7 @@ import {
   ModalCloseButton,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   HStack,
   VStack,
   Tooltip,
@@ -43,6 +44,8 @@ import {
   WrapItem,
   Tag,
   TagLabel,
+  TagCloseButton,
+  Divider,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -83,6 +86,272 @@ import {
   deleteTechnicalBook,
   showErrorToast,
 } from "views/utils/axiosInstance";
+
+// ========================================================
+// REUSABLE PROFESSIONAL FILE UPLOAD DROPZONE
+// ========================================================
+function FileUploadDropzone({
+  file,
+  onFileSelect,
+  onFileRemove,
+  currentDocUrl,
+  label = "Document / Reference PDF",
+  helperText = "Attach a PDF or specification document (Max 25MB).",
+}) {
+  const fileInputRef = React.useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const dropzoneBg = useColorModeValue(
+    isDragging ? "blue.50" : "#F8FAFC",
+    isDragging ? "navy.700" : "gray.800"
+  );
+  const borderColor = useColorModeValue(
+    isDragging ? "#0A3D91" : "gray.300",
+    isDragging ? "#42A5F5" : "gray.600"
+  );
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  return (
+    <FormControl>
+      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
+        {label} <Text as="span" fontSize="xs" fontWeight="normal" color="gray.400">(Optional)</Text>
+      </FormLabel>
+
+      {/* If editing and has existing file */}
+      {currentDocUrl && !file && (
+        <Box
+          mb={3}
+          p={3}
+          bg={useColorModeValue("blue.50", "whiteAlpha.100")}
+          borderRadius="12px"
+          border="1px solid"
+          borderColor={useColorModeValue("blue.200", "blue.800")}
+        >
+          <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
+            <HStack spacing={2.5}>
+              <Flex
+                w="32px"
+                h="32px"
+                borderRadius="8px"
+                bg="red.100"
+                color="red.600"
+                align="center"
+                justify="center"
+              >
+                <Icon as={FaFilePdf} boxSize={4} />
+              </Flex>
+              <Box>
+                <Text fontSize="xs" fontWeight="bold" color={useColorModeValue("blue.900", "blue.200")}>
+                  Current Document Attached
+                </Text>
+                <Text fontSize="2xs" color="gray.500">
+                  File is stored safely. Select a new file below only if you wish to replace it.
+                </Text>
+              </Box>
+            </HStack>
+            <Button
+              as="a"
+              href={currentDocUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="xs"
+              colorScheme="blue"
+              variant="outline"
+              borderRadius="8px"
+              leftIcon={<FaExternalLinkAlt size="10px" />}
+            >
+              Preview Document
+            </Button>
+          </Flex>
+        </Box>
+      )}
+
+      {/* Styled Dropzone */}
+      <Box
+        p={{ base: 4, sm: 5 }}
+        border="2px dashed"
+        borderColor={borderColor}
+        borderRadius="16px"
+        bg={dropzoneBg}
+        textAlign="center"
+        cursor="pointer"
+        transition="all 0.2s ease"
+        _hover={{ borderColor: "#0A3D91", bg: useColorModeValue("blue.50", "navy.750") }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              onFileSelect(e.target.files[0]);
+            }
+          }}
+        />
+
+        {file ? (
+          <Flex align="center" justify="space-between" flexWrap="wrap" gap={3}>
+            <HStack spacing={3}>
+              <Flex
+                w="42px"
+                h="42px"
+                borderRadius="12px"
+                bg="red.100"
+                color="red.600"
+                align="center"
+                justify="center"
+              >
+                <Icon as={FaFilePdf} boxSize={5} />
+              </Flex>
+              <Box textAlign="left">
+                <Text fontSize="sm" fontWeight="bold" color={useColorModeValue("gray.800", "white")} noOfLines={1}>
+                  {file.name}
+                </Text>
+                <Text fontSize="xs" color="green.600" fontWeight="600">
+                  {(file.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload
+                </Text>
+              </Box>
+            </HStack>
+            <Button
+              size="xs"
+              colorScheme="red"
+              variant="ghost"
+              borderRadius="8px"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFileRemove();
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            >
+              Remove
+            </Button>
+          </Flex>
+        ) : (
+          <VStack spacing={1.5} py={2}>
+            <Flex
+              w="44px"
+              h="44px"
+              borderRadius="full"
+              bg={useColorModeValue("blue.100", "whiteAlpha.200")}
+              color="#0A3D91"
+              align="center"
+              justify="center"
+            >
+              <Icon as={FaUpload} boxSize={4} />
+            </Flex>
+            <Text fontSize="sm" fontWeight="600" color={useColorModeValue("gray.700", "gray.200")}>
+              Click to browse or drag & drop file here
+            </Text>
+            <Text fontSize="xs" color="gray.400">
+              Supports PDF, DOC, DOCX (Max size: 25MB)
+            </Text>
+          </VStack>
+        )}
+      </Box>
+      <FormHelperText fontSize="xs" color="gray.400" mt={1.5}>
+        {helperText}
+      </FormHelperText>
+    </FormControl>
+  );
+}
+
+// ========================================================
+// REUSABLE PROFESSIONAL MULTI-TAG INPUT
+// ========================================================
+function MultiTagInput({
+  tags = [],
+  tagInput = "",
+  onInputChange,
+  onAddTag,
+  onRemoveTag,
+  label = "Tags",
+  placeholder = "Type a tag and press Enter...",
+  helperText = "Press Enter or comma (,) to add multiple tags (e.g. Substation, 110kV, Safety).",
+}) {
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      onAddTag();
+    }
+  };
+
+  return (
+    <FormControl>
+      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
+        {label} <Text as="span" fontSize="xs" fontWeight="normal" color="gray.400">(Optional, max 30 characters each)</Text>
+      </FormLabel>
+      <VStack spacing={2.5} align="stretch">
+        <InputGroup size="md">
+          <InputLeftElement pointerEvents="none">
+            <Icon as={FaTag} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder={placeholder}
+            maxLength={30}
+            value={tagInput}
+            onChange={(e) => onInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            bg={useColorModeValue("#F8FAFC", "gray.800")}
+            border="1px solid"
+            borderColor={useColorModeValue("gray.200", "gray.600")}
+            borderRadius="12px"
+            _hover={{ borderColor: "#0A3D91" }}
+            _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+            h="44px"
+          />
+        </InputGroup>
+
+        {/* Selected Tag Badges */}
+        {tags.length > 0 && (
+          <Wrap spacing={2} pt={0.5}>
+            {tags.map((t, idx) => (
+              <WrapItem key={idx}>
+                <Tag
+                  size="md"
+                  borderRadius="full"
+                  variant="solid"
+                  bg="#0A3D91"
+                  color="white"
+                  px={3}
+                  py={1}
+                  boxShadow="sm"
+                >
+                  <TagLabel fontWeight="600" fontSize="xs">{t}</TagLabel>
+                  <TagCloseButton
+                    onClick={() => onRemoveTag(idx)}
+                    _hover={{ bg: "rgba(255,255,255,0.25)" }}
+                  />
+                </Tag>
+              </WrapItem>
+            ))}
+          </Wrap>
+        )}
+      </VStack>
+      <FormHelperText fontSize="xs" color="gray.400" mt={1}>
+        {helperText}
+      </FormHelperText>
+    </FormControl>
+  );
+}
 
 function Technical({ initialTab = 0 }) {
   const location = useLocation();
@@ -127,6 +396,98 @@ function Technical({ initialTab = 0 }) {
     return Array.from(cats).sort((a, b) => a.localeCompare(b));
   }, [paramList]);
 
+  // Dynamic list of unique tags from parameters database
+  const existingTags = useMemo(() => {
+    const tSet = new Set();
+    paramList.forEach((item) => {
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach((t) => t && tSet.add(t.trim()));
+      } else if (item.tag) {
+        item.tag.split(",").forEach((t) => t && tSet.add(t.trim()));
+      }
+    });
+    return Array.from(tSet);
+  }, [paramList]);
+
+  // Dynamic list of unique tags from books database
+  const existingBookTags = useMemo(() => {
+    const tSet = new Set();
+    bookList.forEach((item) => {
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach((t) => t && tSet.add(t.trim()));
+      } else if (item.tag) {
+        item.tag.split(",").forEach((t) => t && tSet.add(t.trim()));
+      }
+    });
+    return Array.from(tSet);
+  }, [bookList]);
+
+  const handleAddParamTag = (explicitTag) => {
+    const raw = explicitTag || paramFormData.tagInput || "";
+    const val = raw.trim().replace(/^,+|,+$/g, "");
+    if (!val) return;
+    if (val.length > 30) {
+      toast({
+        title: "Tag too long",
+        description: "Each tag cannot exceed 30 characters.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+    const current = paramFormData.tags || [];
+    if (!current.includes(val)) {
+      setParamFormData({
+        ...paramFormData,
+        tags: [...current, val],
+        tagInput: "",
+      });
+    } else {
+      setParamFormData({ ...paramFormData, tagInput: "" });
+    }
+  };
+
+  const handleRemoveParamTag = (indexToRemove) => {
+    setParamFormData({
+      ...paramFormData,
+      tags: (paramFormData.tags || []).filter((_, i) => i !== indexToRemove),
+    });
+  };
+
+  const handleAddBookTag = (explicitTag) => {
+    const raw = explicitTag || bookFormData.tagInput || "";
+    const val = raw.trim().replace(/^,+|,+$/g, "");
+    if (!val) return;
+    if (val.length > 30) {
+      toast({
+        title: "Tag too long",
+        description: "Each tag cannot exceed 30 characters.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      return;
+    }
+    const current = bookFormData.tags || [];
+    if (!current.includes(val)) {
+      setBookFormData({
+        ...bookFormData,
+        tags: [...current, val],
+        tagInput: "",
+      });
+    } else {
+      setBookFormData({ ...bookFormData, tagInput: "" });
+    }
+  };
+
+  const handleRemoveBookTag = (indexToRemove) => {
+    setBookFormData({
+      ...bookFormData,
+      tags: (bookFormData.tags || []).filter((_, i) => i !== indexToRemove),
+    });
+  };
+
   // Loading states
   const [loadingQA, setLoadingQA] = useState(false);
   const [loadingParams, setLoadingParams] = useState(false);
@@ -170,12 +531,16 @@ function Technical({ initialTab = 0 }) {
     category: "",
     customCategory: "",
     tag: "",
+    tags: [],
+    tagInput: "",
     document: null,
   });
 
   const [bookFormData, setBookFormData] = useState({
     title: "",
     tag: "",
+    tags: [],
+    tagInput: "",
     document: null,
   });
 
@@ -308,10 +673,18 @@ function Technical({ initialTab = 0 }) {
         category: "",
         customCategory: "",
         tag: "",
+        tags: [],
+        tagInput: "",
         document: null,
       });
     } else {
-      setBookFormData({ title: "", tag: "", document: null });
+      setBookFormData({
+        title: "",
+        tag: "",
+        tags: [],
+        tagInput: "",
+        document: null,
+      });
     }
     setCurrentView("add");
   };
@@ -327,17 +700,33 @@ function Technical({ initialTab = 0 }) {
     } else if (activeTab === 1) {
       const itemCat = item.category ? item.category.trim() : "";
       const isExisting = existingCategories.includes(itemCat);
+      const itemTags = Array.isArray(item.tags) && item.tags.length > 0
+        ? item.tags
+        : item.tag
+          ? item.tag.split(",").map((t) => t.trim()).filter(Boolean)
+          : [];
+
       setParamFormData({
         title: item.title || "",
         category: isExisting ? itemCat : "__new__",
         customCategory: isExisting ? "" : itemCat,
-        tag: item.tag || (Array.isArray(item.tags) ? item.tags.join(", ") : ""),
+        tag: itemTags.join(", "),
+        tags: itemTags,
+        tagInput: "",
         document: null,
       });
     } else {
+      const itemTags = Array.isArray(item.tags) && item.tags.length > 0
+        ? item.tags
+        : item.tag
+          ? item.tag.split(",").map((t) => t.trim()).filter(Boolean)
+          : [];
+
       setBookFormData({
         title: item.title || "",
-        tag: item.tag || (Array.isArray(item.tags) ? item.tags.join(", ") : ""),
+        tag: itemTags.join(", "),
+        tags: itemTags,
+        tagInput: "",
         document: null,
       });
     }
@@ -478,15 +867,24 @@ function Technical({ initialTab = 0 }) {
       return;
     }
 
-    const finalCategory =
-      paramFormData.category === "__new__" || existingCategories.length === 0 || !paramFormData.category
-        ? paramFormData.customCategory.trim()
-        : paramFormData.category.trim();
+    let finalCategory = "";
+    if (existingCategories.length > 0) {
+      if (paramFormData.category === "__new__") {
+        finalCategory = (paramFormData.customCategory || "").trim();
+      } else if (paramFormData.category) {
+        finalCategory = paramFormData.category.trim();
+      }
+    } else {
+      finalCategory = (paramFormData.customCategory || paramFormData.category || "").trim();
+    }
 
     if (!finalCategory) {
       toast({
         title: "Validation Error",
-        description: "Please enter or select a category.",
+        description:
+          paramFormData.category === "__new__"
+            ? "Please type the new category name."
+            : "Please select a category or choose '➕ Enter New Category Name Manually'.",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -495,16 +893,32 @@ function Technical({ initialTab = 0 }) {
       return;
     }
 
-    if (paramFormData.tag && paramFormData.tag.length > 30) {
-      toast({
-        title: "Validation Error",
-        description: "Tag cannot exceed 30 characters.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-        position: "top-right",
+    // Include any pending tag from tagInput if user typed but didn't press Enter/Add
+    let finalTags = [...(paramFormData.tags || [])];
+    if (paramFormData.tagInput && paramFormData.tagInput.trim()) {
+      const pendingTags = paramFormData.tagInput
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      pendingTags.forEach((p) => {
+        if (!finalTags.includes(p)) {
+          finalTags.push(p);
+        }
       });
-      return;
+    }
+
+    for (const t of finalTags) {
+      if (t.length > 30) {
+        toast({
+          title: "Validation Error",
+          description: `Tag "${t}" cannot exceed 30 characters.`,
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -512,9 +926,8 @@ function Technical({ initialTab = 0 }) {
       const data = new FormData();
       data.append("title", paramFormData.title.trim());
       data.append("category", finalCategory);
-      if (paramFormData.tag) {
-        data.append("tag", paramFormData.tag.trim());
-      }
+      data.append("tags", JSON.stringify(finalTags));
+      data.append("tag", finalTags.join(", "));
       if (paramFormData.document) {
         data.append("document", paramFormData.document);
       }
@@ -563,25 +976,40 @@ function Technical({ initialTab = 0 }) {
       return;
     }
 
-    if (bookFormData.tag && bookFormData.tag.length > 30) {
-      toast({
-        title: "Validation Error",
-        description: "Tag cannot exceed 30 characters.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-        position: "top-right",
+    // Include any pending tag from tagInput if user typed but didn't press Enter/Add
+    let finalTags = [...(bookFormData.tags || [])];
+    if (bookFormData.tagInput && bookFormData.tagInput.trim()) {
+      const pendingTags = bookFormData.tagInput
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      pendingTags.forEach((p) => {
+        if (!finalTags.includes(p)) {
+          finalTags.push(p);
+        }
       });
-      return;
+    }
+
+    for (const t of finalTags) {
+      if (t.length > 30) {
+        toast({
+          title: "Validation Error",
+          description: `Tag "${t}" cannot exceed 30 characters.`,
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
       const data = new FormData();
       data.append("title", bookFormData.title.trim());
-      if (bookFormData.tag) {
-        data.append("tag", bookFormData.tag.trim());
-      }
+      data.append("tags", JSON.stringify(finalTags));
+      data.append("tag", finalTags.join(", "));
       if (bookFormData.document) {
         data.append("document", bookFormData.document);
       }
@@ -775,15 +1203,15 @@ function Technical({ initialTab = 0 }) {
                     {activeTab === 0
                       ? "Technical Q & A"
                       : activeTab === 1
-                      ? "Technical Parameters"
-                      : "Technical Books & Manuals"}
+                        ? "Technical Parameters"
+                        : "Technical Books & Manuals"}
                   </Heading>
                   <Text fontSize="sm" color="gray.500">
                     {activeTab === 0
                       ? "Manage frequently asked questions, answers, and technical guidelines."
                       : activeTab === 1
-                      ? "Manage technical specifications, categories, and parameters."
-                      : "Manage technical books, reference manuals, and documentation."}
+                        ? "Manage technical specifications, categories, and parameters."
+                        : "Manage technical books, reference manuals, and documentation."}
                   </Text>
                 </Box>
               </Flex>
@@ -803,8 +1231,8 @@ function Technical({ initialTab = 0 }) {
                 {activeTab === 0
                   ? "Add Q & A"
                   : activeTab === 1
-                  ? "Add Parameter"
-                  : "Add Book / Manual"}
+                    ? "Add Parameter"
+                    : "Add Book / Manual"}
               </Button>
             )}
 
@@ -929,10 +1357,10 @@ function Technical({ initialTab = 0 }) {
                             const serial = (qaPage - 1) * qaPerPage + index + 1;
                             const createdDate = item.createdAt
                               ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
                               : "—";
 
                             return (
@@ -1015,85 +1443,142 @@ function Technical({ initialTab = 0 }) {
 
               {/* Form View (Add / Edit Q&A) */}
               {currentView !== "list" && (
-                <Box as="form" onSubmit={handleQASubmit} maxW="700px" mx="auto" py={4}>
-                  <Heading size="sm" mb={4} color={textColor}>
-                    {currentView === "add" ? "Create New Technical Q & A" : "Edit Technical Q & A"}
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
+                <Box
+                  as="form"
+                  onSubmit={handleQASubmit}
+                  maxW="800px"
+                  mx="auto"
+                  p={{ base: 4, sm: 6, md: 8 }}
+                  bg={useColorModeValue("white", "gray.800")}
+                  borderRadius="20px"
+                  border="1px solid"
+                  borderColor={useColorModeValue("gray.200", "gray.700")}
+                  boxShadow="0 10px 30px rgba(0,0,0,0.04)"
+                >
+                  {/* Form Header */}
+                  <Flex
+                    align="center"
+                    justify="space-between"
+                    pb={5}
+                    mb={6}
+                    borderBottom="1px solid"
+                    borderColor={useColorModeValue("gray.100", "gray.700")}
+                  >
+                    <HStack spacing={3}>
+                      <Flex
+                        w="40px"
+                        h="40px"
+                        borderRadius="12px"
+                        bg="blue.50"
+                        color="#0A3D91"
+                        align="center"
+                        justify="center"
+                      >
+                        <Icon as={currentView === "add" ? FaPlus : FaEdit} boxSize={4} />
+                      </Flex>
+                      <Box>
+                        <Heading size="sm" color={textColor} fontWeight="bold">
+                          {currentView === "add" ? "Create New Technical Q & A" : "Edit Technical Q & A"}
+                        </Heading>
+                        <Text fontSize="xs" color="gray.500">
+                          {currentView === "add"
+                            ? "Provide question details and attach reference documentation."
+                            : `Updating item ID: ${editingItem?._id || editingItem?.id || ""}`}
+                        </Text>
+                      </Box>
+                    </HStack>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      borderRadius="8px"
+                      onClick={handleBackToList}
+                      leftIcon={<FaArrowLeft />}
+                    >
+                      Back
+                    </Button>
+                  </Flex>
+
+                  <VStack spacing={5} align="stretch">
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Title / Question
+                      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
+                        Question / Topic Title
                       </FormLabel>
                       <Input
-                        placeholder="Enter question or topic title..."
+                        placeholder="e.g. How to perform transformer insulation resistance test?"
                         value={qaFormData.title}
                         onChange={(e) => setQaFormData({ ...qaFormData, title: e.target.value })}
-                        borderRadius="10px"
+                        borderRadius="12px"
+                        bg={useColorModeValue("#F8FAFC", "gray.800")}
+                        border="1px solid"
+                        borderColor={useColorModeValue("gray.200", "gray.600")}
+                        _hover={{ borderColor: "#0A3D91" }}
+                        _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                        h="44px"
                       />
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Description / Answer
+                      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
+                        Description / Detailed Answer
                       </FormLabel>
                       <Textarea
-                        placeholder="Enter detailed description or answer..."
-                        rows={5}
+                        placeholder="Enter detailed technical answer, instructions, or procedure notes..."
+                        rows={6}
                         value={qaFormData.description}
                         onChange={(e) => setQaFormData({ ...qaFormData, description: e.target.value })}
-                        borderRadius="10px"
+                        borderRadius="12px"
+                        bg={useColorModeValue("#F8FAFC", "gray.800")}
+                        border="1px solid"
+                        borderColor={useColorModeValue("gray.200", "gray.600")}
+                        _hover={{ borderColor: "#0A3D91" }}
+                        _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
                       />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Document / Reference PDF (Optional)
-                      </FormLabel>
-                      {currentView === "edit" && editingItem?.docUrl && (
-                        <Box mb={2} p={3} bg="blue.50" borderRadius="8px">
-                          <Text fontSize="xs" color="blue.800" fontWeight="bold" mb={1}>
-                            Current Document:
-                          </Text>
-                          <Button
-                            as="a"
-                            href={editingItem.docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="xs"
-                            colorScheme="blue"
-                            leftIcon={<FaFilePdf />}
-                          >
-                            View Attached Document
-                          </Button>
-                        </Box>
-                      )}
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        p={1}
-                        onChange={(e) => setQaFormData({ ...qaFormData, document: e.target.files[0] })}
-                        borderRadius="10px"
-                      />
-                      <FormHelperText fontSize="xs">
-                        Attach a supporting PDF or document (Max 25MB).
+                      <FormHelperText fontSize="xs" color="gray.400">
+                        Provide step-by-step guidance or comprehensive explanation.
                       </FormHelperText>
                     </FormControl>
 
-                    <HStack spacing={3} pt={4} justify="flex-end">
-                      <Button variant="ghost" onClick={handleBackToList} isDisabled={isSubmitting}>
+                    <FileUploadDropzone
+                      file={qaFormData.document}
+                      onFileSelect={(f) => setQaFormData({ ...qaFormData, document: f })}
+                      onFileRemove={() => setQaFormData({ ...qaFormData, document: null })}
+                      currentDocUrl={editingItem?.docUrl}
+                      label="Document / Reference PDF"
+                      helperText="Attach standard operating procedure or reference PDF (Max 25MB)."
+                    />
+
+                    <Flex
+                      direction={{ base: "column-reverse", sm: "row" }}
+                      justify="flex-end"
+                      gap={3}
+                      pt={4}
+                      borderTop="1px solid"
+                      borderColor={useColorModeValue("gray.100", "gray.700")}
+                    >
+                      <Button
+                        w={{ base: "100%", sm: "auto" }}
+                        variant="outline"
+                        borderRadius="10px"
+                        onClick={handleBackToList}
+                        isDisabled={isSubmitting}
+                      >
                         Cancel
                       </Button>
                       <Button
+                        w={{ base: "100%", sm: "auto" }}
                         type="submit"
                         bg={customColor}
                         color="white"
                         _hover={{ bg: customHoverColor }}
+                        borderRadius="10px"
                         isLoading={isSubmitting}
                         loadingText={currentView === "add" ? "Creating..." : "Updating..."}
+                        px={6}
+                        boxShadow="sm"
                       >
-                        {currentView === "add" ? "Create Q&A" : "Update Q&A"}
+                        {currentView === "add" ? "Create Technical Q&A" : "Update Technical Q&A"}
                       </Button>
-                    </HStack>
+                    </Flex>
                   </VStack>
                 </Box>
               )}
@@ -1228,17 +1713,17 @@ function Technical({ initialTab = 0 }) {
                             const serial = (paramPage - 1) * paramPerPage + index + 1;
                             const createdDate = item.createdAt
                               ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
                               : "—";
 
                             const displayTags = Array.isArray(item.tags) && item.tags.length > 0
                               ? item.tags
                               : item.tag
-                              ? [item.tag]
-                              : [];
+                                ? [item.tag]
+                                : [];
 
                             return (
                               <Tr key={item._id || item.id} _hover={{ bg: useColorModeValue("gray.50", "gray.750") }}>
@@ -1335,31 +1820,88 @@ function Technical({ initialTab = 0 }) {
 
               {/* Form View (Add / Edit Parameter) */}
               {currentView !== "list" && (
-                <Box as="form" onSubmit={handleParamSubmit} maxW="700px" mx="auto" py={4}>
-                  <Heading size="sm" mb={4} color={textColor}>
-                    {currentView === "add" ? "Create New Technical Parameter" : "Edit Technical Parameter"}
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
+                <Box
+                  as="form"
+                  onSubmit={handleParamSubmit}
+                  maxW="800px"
+                  mx="auto"
+                  p={{ base: 4, sm: 6, md: 8 }}
+                  bg={useColorModeValue("white", "gray.800")}
+                  borderRadius="20px"
+                  border="1px solid"
+                  borderColor={useColorModeValue("gray.200", "gray.700")}
+                  boxShadow="0 10px 30px rgba(0,0,0,0.04)"
+                >
+                  {/* Form Header */}
+                  <Flex
+                    align="center"
+                    justify="space-between"
+                    pb={5}
+                    mb={6}
+                    borderBottom="1px solid"
+                    borderColor={useColorModeValue("gray.100", "gray.700")}
+                  >
+                    <HStack spacing={3}>
+                      <Flex
+                        w="40px"
+                        h="40px"
+                        borderRadius="12px"
+                        bg="teal.50"
+                        color="teal.600"
+                        align="center"
+                        justify="center"
+                      >
+                        <Icon as={currentView === "add" ? FaPlus : FaEdit} boxSize={4} />
+                      </Flex>
+                      <Box>
+                        <Heading size="sm" color={textColor} fontWeight="bold">
+                          {currentView === "add" ? "Create New Technical Parameter" : "Edit Technical Parameter"}
+                        </Heading>
+                        <Text fontSize="xs" color="gray.500">
+                          {currentView === "add"
+                            ? "Define equipment specifications, category, and technical documents."
+                            : `Updating parameter ID: ${editingItem?._id || editingItem?.id || ""}`}
+                        </Text>
+                      </Box>
+                    </HStack>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      borderRadius="8px"
+                      onClick={handleBackToList}
+                      leftIcon={<FaArrowLeft />}
+                    >
+                      Back
+                    </Button>
+                  </Flex>
+
+                  <VStack spacing={5} align="stretch">
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm" fontWeight="bold">
+                      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
                         Parameter Title
                       </FormLabel>
                       <Input
                         placeholder="e.g. Transformer Specifications 110kV/11kV"
                         value={paramFormData.title}
                         onChange={(e) => setParamFormData({ ...paramFormData, title: e.target.value })}
-                        borderRadius="10px"
+                        borderRadius="12px"
+                        bg={useColorModeValue("#F8FAFC", "gray.800")}
+                        border="1px solid"
+                        borderColor={useColorModeValue("gray.200", "gray.600")}
+                        _hover={{ borderColor: "#0A3D91" }}
+                        _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                        h="44px"
                       />
                     </FormControl>
 
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm" fontWeight="bold">
+                      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
                         Category
                       </FormLabel>
                       {existingCategories.length > 0 ? (
-                        <VStack spacing={3} align="stretch">
+                        <VStack spacing={2.5} align="stretch">
                           <Select
-                            placeholder="-- Select Existing Category --"
+                            placeholder="-- Select From Existing Category --"
                             value={paramFormData.category}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -1369,30 +1911,43 @@ function Technical({ initialTab = 0 }) {
                                 customCategory: val === "__new__" ? paramFormData.customCategory : "",
                               });
                             }}
-                            borderRadius="10px"
+                            borderRadius="12px"
+                            bg={useColorModeValue("#F8FAFC", "gray.800")}
+                            border="1px solid"
+                            borderColor={useColorModeValue("gray.200", "gray.600")}
+                            _hover={{ borderColor: "#0A3D91" }}
+                            _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                            h="44px"
                           >
                             {existingCategories.map((cat) => (
                               <option key={cat} value={cat}>
                                 {cat}
                               </option>
                             ))}
-                            <option value="__new__">+ Add New Category (Manual Entry)</option>
+                            <option value="__new__">➕ Enter New Category Name Manually</option>
                           </Select>
 
-                          {(paramFormData.category === "__new__" || !paramFormData.category) && (
+                          {paramFormData.category === "__new__" && (
                             <Input
-                              placeholder="Enter category name manually..."
+                              placeholder="Type new category name here (e.g. Substation, Transmission)..."
                               value={paramFormData.customCategory}
                               onChange={(e) =>
                                 setParamFormData({ ...paramFormData, customCategory: e.target.value })
                               }
-                              borderRadius="10px"
+                              borderRadius="12px"
+                              bg={useColorModeValue("#F8FAFC", "gray.800")}
+                              border="1px solid"
+                              borderColor={useColorModeValue("gray.200", "gray.600")}
+                              _hover={{ borderColor: "#0A3D91" }}
+                              _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                              h="44px"
+                              autoFocus
                             />
                           )}
                         </VStack>
                       ) : (
                         <Input
-                          placeholder="Enter category name manually..."
+                          placeholder="Type category name (e.g. Transformers, Switchgears, Cables)..."
                           value={paramFormData.customCategory}
                           onChange={(e) =>
                             setParamFormData({
@@ -1401,81 +1956,74 @@ function Technical({ initialTab = 0 }) {
                               customCategory: e.target.value,
                             })
                           }
-                          borderRadius="10px"
+                          borderRadius="12px"
+                          bg={useColorModeValue("#F8FAFC", "gray.800")}
+                          border="1px solid"
+                          borderColor={useColorModeValue("gray.200", "gray.600")}
+                          _hover={{ borderColor: "#0A3D91" }}
+                          _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                          h="44px"
                         />
                       )}
-                      <FormHelperText fontSize="xs">
+                      <FormHelperText fontSize="xs" color="gray.400">
                         {existingCategories.length > 0
-                          ? "Select an existing category or enter a new one manually."
-                          : "Type the category name manually. Once added, it will appear in the dropdown for future items."}
+                          ? "Select an existing category from the dropdown, or choose '➕ Enter New Category Name Manually' to type a new one."
+                          : "No existing categories found. Type a category name manually — once saved, it will be available in the dropdown."}
                       </FormHelperText>
                     </FormControl>
 
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Tag (Optional, max 30 characters)
-                      </FormLabel>
-                      <Input
-                        placeholder="e.g. Substation, 110kV"
-                        maxLength={30}
-                        value={paramFormData.tag}
-                        onChange={(e) => setParamFormData({ ...paramFormData, tag: e.target.value })}
+                    <MultiTagInput
+                      tags={paramFormData.tags || []}
+                      tagInput={paramFormData.tagInput || ""}
+                      onInputChange={(val) => setParamFormData({ ...paramFormData, tagInput: val })}
+                      onAddTag={handleAddParamTag}
+                      onRemoveTag={handleRemoveParamTag}
+                      label="Tags"
+                      placeholder="Type a tag and press Enter..."
+                      helperText="Press Enter or comma (,) to add multiple tags (e.g. Substation, 110kV, Environment)."
+                    />
+
+                    <FileUploadDropzone
+                      file={paramFormData.document}
+                      onFileSelect={(f) => setParamFormData({ ...paramFormData, document: f })}
+                      onFileRemove={() => setParamFormData({ ...paramFormData, document: null })}
+                      currentDocUrl={editingItem?.docUrl}
+                      label="Document / Technical Spec PDF"
+                      helperText="Attach equipment datasheet, technical manual or spec PDF (Max 25MB)."
+                    />
+
+                    <Flex
+                      direction={{ base: "column-reverse", sm: "row" }}
+                      justify="flex-end"
+                      gap={3}
+                      pt={4}
+                      borderTop="1px solid"
+                      borderColor={useColorModeValue("gray.100", "gray.700")}
+                    >
+                      <Button
+                        w={{ base: "100%", sm: "auto" }}
+                        variant="outline"
                         borderRadius="10px"
-                      />
-                      <FormHelperText fontSize="xs">
-                        Short tag to group or filter this parameter (Max 30 chars).
-                      </FormHelperText>
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Document / Technical Spec PDF (Optional)
-                      </FormLabel>
-                      {currentView === "edit" && editingItem?.docUrl && (
-                        <Box mb={2} p={3} bg="blue.50" borderRadius="8px">
-                          <Text fontSize="xs" color="blue.800" fontWeight="bold" mb={1}>
-                            Current Document:
-                          </Text>
-                          <Button
-                            as="a"
-                            href={editingItem.docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="xs"
-                            colorScheme="blue"
-                            leftIcon={<FaFilePdf />}
-                          >
-                            View Attached Document
-                          </Button>
-                        </Box>
-                      )}
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        p={1}
-                        onChange={(e) => setParamFormData({ ...paramFormData, document: e.target.files[0] })}
-                        borderRadius="10px"
-                      />
-                      <FormHelperText fontSize="xs">
-                        Attach a specification PDF (Max 25MB).
-                      </FormHelperText>
-                    </FormControl>
-
-                    <HStack spacing={3} pt={4} justify="flex-end">
-                      <Button variant="ghost" onClick={handleBackToList} isDisabled={isSubmitting}>
+                        onClick={handleBackToList}
+                        isDisabled={isSubmitting}
+                      >
                         Cancel
                       </Button>
                       <Button
+                        w={{ base: "100%", sm: "auto" }}
                         type="submit"
                         bg={customColor}
                         color="white"
                         _hover={{ bg: customHoverColor }}
+                        borderRadius="10px"
                         isLoading={isSubmitting}
                         loadingText={currentView === "add" ? "Creating..." : "Updating..."}
+                        px={6}
+                        boxShadow="sm"
                       >
-                        {currentView === "add" ? "Create Parameter" : "Update Parameter"}
+                        {currentView === "add" ? "Create Technical Parameter" : "Update Technical Parameter"}
                       </Button>
-                    </HStack>
+                    </Flex>
                   </VStack>
                 </Box>
               )}
@@ -1586,17 +2134,17 @@ function Technical({ initialTab = 0 }) {
                             const serial = (bookPage - 1) * bookPerPage + index + 1;
                             const createdDate = item.createdAt
                               ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
                               : "—";
 
                             const displayTags = Array.isArray(item.tags) && item.tags.length > 0
                               ? item.tags
                               : item.tag
-                              ? [item.tag]
-                              : [];
+                                ? [item.tag]
+                                : [];
 
                             return (
                               <Tr key={item._id || item.id} _hover={{ bg: useColorModeValue("gray.50", "gray.750") }}>
@@ -1688,88 +2236,132 @@ function Technical({ initialTab = 0 }) {
 
               {/* Form View (Add / Edit Book) */}
               {currentView !== "list" && (
-                <Box as="form" onSubmit={handleBookSubmit} maxW="700px" mx="auto" py={4}>
-                  <Heading size="sm" mb={4} color={textColor}>
-                    {currentView === "add" ? "Create New Technical Book / Manual" : "Edit Technical Book / Manual"}
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
+                <Box
+                  as="form"
+                  onSubmit={handleBookSubmit}
+                  maxW="800px"
+                  mx="auto"
+                  p={{ base: 4, sm: 6, md: 8 }}
+                  bg={useColorModeValue("white", "gray.800")}
+                  borderRadius="20px"
+                  border="1px solid"
+                  borderColor={useColorModeValue("gray.200", "gray.700")}
+                  boxShadow="0 10px 30px rgba(0,0,0,0.04)"
+                >
+                  {/* Form Header */}
+                  <Flex
+                    align="center"
+                    justify="space-between"
+                    pb={5}
+                    mb={6}
+                    borderBottom="1px solid"
+                    borderColor={useColorModeValue("gray.100", "gray.700")}
+                  >
+                    <HStack spacing={3}>
+                      <Flex
+                        w="40px"
+                        h="40px"
+                        borderRadius="12px"
+                        bg="purple.50"
+                        color="purple.600"
+                        align="center"
+                        justify="center"
+                      >
+                        <Icon as={currentView === "add" ? FaPlus : FaEdit} boxSize={4} />
+                      </Flex>
+                      <Box>
+                        <Heading size="sm" color={textColor} fontWeight="bold">
+                          {currentView === "add" ? "Create New Technical Book / Manual" : "Edit Technical Book / Manual"}
+                        </Heading>
+                        <Text fontSize="xs" color="gray.500">
+                          {currentView === "add"
+                            ? "Upload technical handbook, safety code, or guideline manual."
+                            : `Updating book ID: ${editingItem?._id || editingItem?.id || ""}`}
+                        </Text>
+                      </Box>
+                    </HStack>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      borderRadius="8px"
+                      onClick={handleBackToList}
+                      leftIcon={<FaArrowLeft />}
+                    >
+                      Back
+                    </Button>
+                  </Flex>
+
+                  <VStack spacing={5} align="stretch">
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm" fontWeight="bold">
+                      <FormLabel fontSize="sm" fontWeight="700" color={useColorModeValue("gray.700", "gray.200")}>
                         Book / Manual Title
                       </FormLabel>
                       <Input
                         placeholder="e.g. Distribution Technical Reference Manual 2026"
                         value={bookFormData.title}
                         onChange={(e) => setBookFormData({ ...bookFormData, title: e.target.value })}
-                        borderRadius="10px"
+                        borderRadius="12px"
+                        bg={useColorModeValue("#F8FAFC", "gray.800")}
+                        border="1px solid"
+                        borderColor={useColorModeValue("gray.200", "gray.600")}
+                        _hover={{ borderColor: "#0A3D91" }}
+                        _focus={{ borderColor: "#0A3D91", boxShadow: "0 0 0 1px #0A3D91", bg: "white" }}
+                        h="44px"
                       />
                     </FormControl>
 
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Tag (Optional, max 30 characters)
-                      </FormLabel>
-                      <Input
-                        placeholder="e.g. Manual, Distribution, Handbook"
-                        maxLength={30}
-                        value={bookFormData.tag}
-                        onChange={(e) => setBookFormData({ ...bookFormData, tag: e.target.value })}
-                        borderRadius="10px"
-                      />
-                      <FormHelperText fontSize="xs">
-                        Short tag to categorize this book/manual (Max 30 chars).
-                      </FormHelperText>
-                    </FormControl>
+                    <MultiTagInput
+                      tags={bookFormData.tags || []}
+                      tagInput={bookFormData.tagInput || ""}
+                      onInputChange={(val) => setBookFormData({ ...bookFormData, tagInput: val })}
+                      onAddTag={handleAddBookTag}
+                      onRemoveTag={handleRemoveBookTag}
+                      label="Tags"
+                      placeholder="Type a tag and press Enter..."
+                      helperText="Press Enter or comma (,) to add multiple tags (e.g. Manual, Distribution, Handbook)."
+                    />
 
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="bold">
-                        Document / Manual PDF (Optional)
-                      </FormLabel>
-                      {currentView === "edit" && editingItem?.docUrl && (
-                        <Box mb={2} p={3} bg="blue.50" borderRadius="8px">
-                          <Text fontSize="xs" color="blue.800" fontWeight="bold" mb={1}>
-                            Current Document:
-                          </Text>
-                          <Button
-                            as="a"
-                            href={editingItem.docUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="xs"
-                            colorScheme="blue"
-                            leftIcon={<FaFilePdf />}
-                          >
-                            View Attached Document
-                          </Button>
-                        </Box>
-                      )}
-                      <Input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        p={1}
-                        onChange={(e) => setBookFormData({ ...bookFormData, document: e.target.files[0] })}
-                        borderRadius="10px"
-                      />
-                      <FormHelperText fontSize="xs">
-                        Attach a book or manual PDF (Max 25MB).
-                      </FormHelperText>
-                    </FormControl>
+                    <FileUploadDropzone
+                      file={bookFormData.document}
+                      onFileSelect={(f) => setBookFormData({ ...bookFormData, document: f })}
+                      onFileRemove={() => setBookFormData({ ...bookFormData, document: null })}
+                      currentDocUrl={editingItem?.docUrl}
+                      label="Document / Book PDF"
+                      helperText="Attach full book or manual PDF (Max 25MB)."
+                    />
 
-                    <HStack spacing={3} pt={4} justify="flex-end">
-                      <Button variant="ghost" onClick={handleBackToList} isDisabled={isSubmitting}>
+                    <Flex
+                      direction={{ base: "column-reverse", sm: "row" }}
+                      justify="flex-end"
+                      gap={3}
+                      pt={4}
+                      borderTop="1px solid"
+                      borderColor={useColorModeValue("gray.100", "gray.700")}
+                    >
+                      <Button
+                        w={{ base: "100%", sm: "auto" }}
+                        variant="outline"
+                        borderRadius="10px"
+                        onClick={handleBackToList}
+                        isDisabled={isSubmitting}
+                      >
                         Cancel
                       </Button>
                       <Button
+                        w={{ base: "100%", sm: "auto" }}
                         type="submit"
                         bg={customColor}
                         color="white"
                         _hover={{ bg: customHoverColor }}
+                        borderRadius="10px"
                         isLoading={isSubmitting}
                         loadingText={currentView === "add" ? "Creating..." : "Updating..."}
+                        px={6}
+                        boxShadow="sm"
                       >
-                        {currentView === "add" ? "Create Book" : "Update Book"}
+                        {currentView === "add" ? "Create Book / Manual" : "Update Book / Manual"}
                       </Button>
-                    </HStack>
+                    </Flex>
                   </VStack>
                 </Box>
               )}
