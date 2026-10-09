@@ -12,8 +12,11 @@ import {
 export { AppError, parseApiError, showErrorToast, sanitizeErrorMessage, logApiError };
 
 // --- Configuration ---
-const API_BASE_URL = "https://tnebserver-u7qr.onrender.com";
-const BASE_URL = "https://tnebserver-u7qr.onrender.com/api";
+const API_BASE_URL = process.env.NODE_ENV === "production"
+  ? "https://tnebserver-u7qr.onrender.com"
+  : "http://localhost:5000";
+
+const BASE_URL = `${API_BASE_URL}/api`;
 const TIMEOUT_MS = 15000;
 
 export const getAuthHeaders = (isFormData = false) => {
@@ -857,3 +860,18 @@ export const deleteTechnicalBook = async (id) => {
   });
 };
 
+// ----- User Application Enrollments APIs -----
+export const getAllApplications = async () => {
+  return apiRequest("/enroll/applications", { method: "GET" });
+};
+
+export const deleteApplication = async (id) => {
+  return apiRequest(`/enroll/${id}`, { method: "DELETE" });
+};
+
+export const updateApplicationStatus = async (id, status) => {
+  return apiRequest(`/enroll/${id}/status`, { 
+    method: "PATCH",
+    body: { status }
+  });
+};

@@ -7,6 +7,7 @@ import SignIn from "views/Pages/SignIn.js";
 import AdminManagement from "views/Dashboard/AdminManagement.js";
 import UserManagement from "views/Dashboard/UserManagement.js";
 import ProductManagement from "views/Dashboard/ProductManagement";
+import Enrollments from "views/Dashboard/Enrollments.js";
 
 import {
   HomeIcon,
@@ -59,6 +60,13 @@ var dashRoutes = [
     rtlName: "إدارة المسؤول",
     icon: <StatsIcon color="#0A3D91" />,
     element: <AdminManagement />,
+    layout: "/admin",
+  },
+  {
+    path: "/user-enrollments",
+    name: "Enrollment Forms",
+    icon: <DocumentIcon color={ICON_COLOR} />,
+    element: <Enrollments />,
     layout: "/admin",
   },
   {
