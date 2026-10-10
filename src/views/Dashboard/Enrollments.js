@@ -155,9 +155,9 @@ function Enrollments() {
                 <Thead>
                   <Tr my=".8rem" pl="0px" color="gray.400">
                     <Th color="gray.400">S.No</Th>
-                    <Th color="gray.400">Date</Th>
                     <Th color="gray.400">Form Type</Th>
                     <Th color="gray.400">Status</Th>
+                    <Th color="gray.400">Date</Th>
                     <Th color="gray.400" textAlign="center">Actions</Th>
                   </Tr>
                 </Thead>
@@ -165,9 +165,9 @@ function Enrollments() {
                   {applications.map((app, index) => (
                     <Tr key={app._id}>
                       <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{index + 1}</Text></Td>
-                      <Td><Text fontSize="sm" color={textColor}>{new Date(app.createdAt).toLocaleDateString()}</Text></Td>
-                      <Td><Badge colorScheme="purple">{app.formType}</Badge></Td>
+                      <Td><Text fontSize="sm" color={textColor} fontWeight="semibold">{app.formType}</Text></Td>
                       <Td><Badge colorScheme={app.status === 'PENDING' ? 'orange' : 'green'}>{app.status}</Badge></Td>
+                      <Td><Text fontSize="sm" color={textColor}>{new Date(app.createdAt).toLocaleDateString()}</Text></Td>
                       <Td textAlign="center">
                         <Button variant="ghost" colorScheme="blue" size="sm" onClick={() => {
                           setSelectedForm(app);

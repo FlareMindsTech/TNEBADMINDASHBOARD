@@ -10,7 +10,7 @@ export const EBFViewer = ({ formData }) => {
         {/* ================= PAGE 1: APPLICATION ================= */}
           <div className="ebf-page">
             <div className="d-flex justify-content-between align-items-start mb-4">
-              <div className="w-150">
+              <div className="ebf-logo-wrapper">
                 <img src={TnebLogoImg} alt="TNEB Logo" className="ebf-logo" />
               </div>
               <div className="ebf-header-text flex-1 text-center px-3">
@@ -21,9 +21,9 @@ export const EBFViewer = ({ formData }) => {
                 <p className="admin-text">(Administered by the TNEB Engineer's Association)</p>
                 <h3 className="app-title-box">APPLICATION</h3>
               </div>
-              <div className="w-150 text-right">
-                <div style={{fontSize: '13px', fontWeight: 'bold', whiteSpace: 'nowrap'}}>EBF VII No.</div>
-                <input type="text" className="inline-input no-border-btm w-100 mt-1" name="ebfViiNo" value={formData.ebfViiNo || ''} readOnly style={{ color: 'black', fontWeight: 'bold' }} />
+              <div className="ebf-no-container">
+                <div className="ebf-no-label">EBF VII No.</div>
+                <input type="text" className="ebf-no-box" name="ebfViiNo" value={formData.ebfViiNo || ''} readOnly style={{ color: 'black', fontWeight: 'bold' }} />
               </div>
             </div>
 
@@ -34,7 +34,7 @@ export const EBFViewer = ({ formData }) => {
                     <span className="sno">1.</span>
                     <label>Name of the Applicant<br/><span className="sub-label">(in capital letters)</span></label>
                     <span className="colon">:</span>
-                    <input type="text" name="applicantName" value={formData.applicantName || ''} readOnly className="form-input text-uppercase flex-1" style={{ color: 'black', opacity: 1, fontWeight: 'bold' }} required />
+                    <input type="text" name="applicantName" value={formData.applicantName || ''} readOnly className="form-input text-uppercase flex-1" style={{ color: 'black', opacity: 1, fontWeight: 'bold' }} placeholder="Enter Applicant Name" required />
                   </div>
                   <div className="d-flex field-row">
                     <span className="sno">2.</span>
@@ -49,13 +49,13 @@ export const EBFViewer = ({ formData }) => {
                     <span className="sno">3.</span>
                     <label>Qualification with Discipline</label>
                     <span className="colon">:</span>
-                    <input type="text" name="qualification" value={formData.qualification || ''} readOnly className="form-input flex-1" style={{ color: 'black', fontWeight: 'bold' }} required />
+                    <input type="text" name="qualification" value={formData.qualification || ''} readOnly className="form-input flex-1" style={{ color: 'black', fontWeight: 'bold' }} placeholder="Enter Qualification" required />
                   </div>
                   <div className="d-flex field-row">
                     <span className="sno">4.</span>
                     <label>Official Designation and<br/>Office Address</label>
                     <span className="colon">:</span>
-                    <textarea name="designationAddress" value={formData.designationAddress || ''} readOnly className="form-input flex-1" rows="2" style={{ color: 'black', fontWeight: 'bold' }} required></textarea>
+                    <textarea name="designationAddress" value={formData.designationAddress || ''} readOnly className="form-input flex-1" rows="2" style={{ color: 'black', fontWeight: 'bold' }} placeholder="Enter Designation and Office Address" required></textarea>
                   </div>
                 </div>
                 <div className="photo-box">
@@ -132,22 +132,40 @@ export const EBFViewer = ({ formData }) => {
                 <span className="sno">14.</span>
                 <label>Mode the Payment<br/><span className="sub-label">Full Subscription at a time</span></label>
                 <span className="colon">:</span>
-                <div className="flex-1 payment-row">
-                  <span>Rs.</span><input type="number" name="paymentAmount" value={formData.paymentAmount} readOnly disabled className="inline-input w-20" required />
-                  <span>DD No.</span><input type="text" name="ddNo" value={formData.ddNo} readOnly disabled className="inline-input w-20" required />
-                  <span>Date</span><input type="date" name="ddDate" value={formData.ddDate} readOnly disabled className="inline-input border-btm" required />
-                  <br/>
-                  <span>Drawn on</span><input type="text" name="drawnOn" value={formData.drawnOn} readOnly disabled className="inline-input w-30" required />
-                  <span>at</span><input type="text" name="branch" value={formData.branch} readOnly disabled className="inline-input w-30" required />
-                  <span>branch</span>
+                <div className="flex-1">
+                  <div className="payment-row mb-2" style={{gap: '10px', flexWrap: 'nowrap', overflowX: 'auto'}}>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="bold-text">Rs.</span>
+                      <input type="number" name="paymentAmount" value={formData.paymentAmount || ''} readOnly className="ebf-no-box" style={{width: '90px', color: 'black', fontWeight: 'bold'}} placeholder="Amount" />
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="bold-text">DD No.</span>
+                      <input type="text" name="ddNo" value={formData.ddNo || ''} readOnly className="ebf-no-box" style={{width: '120px', color: 'black', fontWeight: 'bold'}} placeholder="DD Number" />
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="bold-text">Date</span>
+                      <input type="date" name="ddDate" value={formData.ddDate || ''} readOnly className="ebf-no-box" style={{width: '130px', color: 'black', fontWeight: 'bold'}} />
+                    </div>
+                  </div>
+                  <div className="payment-row" style={{gap: '10px', flexWrap: 'wrap'}}>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="bold-text text-nowrap">Drawn on</span>
+                      <input type="text" name="drawnOn" value={formData.drawnOn || ''} readOnly className="ebf-no-box" style={{width: '140px', color: 'black', fontWeight: 'bold'}} placeholder="Bank Name" />
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="bold-text">at</span>
+                      <input type="text" name="branch" value={formData.branch || ''} readOnly className="ebf-no-box" style={{width: '140px', color: 'black', fontWeight: 'bold'}} placeholder="Branch Name" />
+                      <span className="bold-text">branch</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="certifies-section mt-4">
                 <p className="bold-text">Certifies that :</p>
-                <div className="d-flex field-row">
+                <div className="d-flex field-row align-items-center">
                   <span className="sno">1.</span>
-                  <div>I am Life Member of the TNEB Engineers' Association bearing L.M. No. <input type="text" name="lmNo" value={formData.lmNo} readOnly disabled className="inline-input w-30" required /></div>
+                  <div style={{lineHeight: '30px'}}>I am Life Member of the TNEB Engineers' Association bearing L.M. No. <input type="text" name="lmNo" value={formData.lmNo || ''} readOnly className="ebf-no-box ms-2" style={{maxWidth: '120px', padding: '4px 8px', color: 'black', fontWeight: 'bold'}} placeholder="LM Number" /></div>
                 </div>
                 <div className="d-flex field-row">
                   <span className="sno">2.</span>
@@ -199,8 +217,9 @@ export const EBFViewer = ({ formData }) => {
           {/* ================= PAGE 2: NOMINATION ================= */}
           <div className="ebf-page">
             <div className="nomination-header">
-               <div className="text-right note-small">
-                 <span className="mr-2">EBF VII No.</span><input type="text" className="inline-input w-20" readOnly style={{ color: 'black', fontWeight: 'bold' }} value={formData.ebfViiNo || ''} />
+               <div className="d-flex justify-content-end align-items-center mb-2">
+                 <span className="ebf-no-label me-2" style={{marginRight: '8px'}}>EBF VII No.</span>
+                 <input type="text" className="ebf-no-box ebf-no-box-sm" readOnly style={{ color: 'black', fontWeight: 'bold' }} value={formData.ebfViiNo || ''} />
                </div>
                <p className="text-center note-small mt-2">Note : Members are advised to NOMINATE ONLY THEIR LEGAL HEIR(S) Contemplated in succession Act.</p>
                <h3 className="section-main-title text-center mt-3 mb-4">T.N.EB. ENGINEERS' BENEVOLENT FUND NOMINATION</h3>
@@ -403,7 +422,7 @@ export const EBFViewer = ({ formData }) => {
 
                 <div className="mt-4 mb-4 lh-2 text-center">
                   2. Application admitted nomination approved and the TNEB Engineer's Benevolent Fund<br/>
-                  membership number allotted in EBF VII no. <input type="text" className="inline-input w-20" name="officeEbfViiNo" value={formData.officeEbfViiNo || ''} readOnly style={{ color: 'black', fontWeight: 'bold' }} /> Date <input type="date" className="inline-input w-20" name="officeDate" value={formData.officeDate || ''} readOnly style={{ color: 'black', fontWeight: 'bold' }} />
+                  membership number allotted in EBF VII no. <input type="text" className="form-input text-center" style={{ width: '180px', margin: '0 10px', color: 'black', fontWeight: 'bold' }} name="officeEbfViiNo" value={formData.officeEbfViiNo || ''} readOnly placeholder="Enter EBF VII No." /> Date <input type="date" className="form-input text-center" style={{ width: '150px', marginLeft: '10px', color: 'black', fontWeight: 'bold' }} name="officeDate" value={formData.officeDate || ''} readOnly />
                 </div>
 
                 <div className="notes-section mt-3 text-center">
