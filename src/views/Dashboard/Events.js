@@ -32,6 +32,7 @@ import {
     ModalFooter,
     ModalBody,
     ModalCloseButton,
+    Tooltip,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -335,21 +336,43 @@ function Events() {
                                 </Thead>
                                 <Tbody>
                                     {currentEvents.map((event, index) => {
-                                        const fileUrl = event.pdfUrl || event.pdf;
+                                        const fileUrl = event.pdfUrl || event.pdf || event.docUrl || event.link;
                                         return (
-                                            <Tr key={event._id || event.id}>
+                                            <Tr key={event._id || event.id} _hover={{ bg: "gray.50" }} transition="background-color 0.15s">
                                                 <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{event.title}</Text></Td>
-                                                <Td><Text fontSize="sm" color={textColor}>{event.description}</Text></Td>
+                                                <Td>
+                                                    {fileUrl ? (
+                                                        <Text
+                                                            as="a"
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            fontSize="sm"
+                                                            color={customColor}
+                                                            fontWeight="bold"
+                                                            cursor="pointer"
+                                                            _hover={{ textDecoration: "underline", color: customHoverColor }}
+                                                        >
+                                                            {event.title}
+                                                        </Text>
+                                                    ) : (
+                                                        <Text fontSize="sm" color={textColor} fontWeight="bold">
+                                                            {event.title}
+                                                        </Text>
+                                                    )}
+                                                </Td>
+                                                <Td><Text fontSize="sm" color={textColor}>{event.description || "-"}</Text></Td>
                                                 <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{event.date ? event.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
                                                 <Td textAlign="center">
-                                                    <Flex justify="center">
+                                                    <Flex justify="center" align="center" gap={1}>
                                                         {fileUrl && (
-                                                            <Button as="a" href={fileUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
-                                                                <Icon as={fileUrl.toLowerCase().endsWith('.pdf') ? FaFilePdf : FaFileImage} />
-                                                            </Button>
+                                                            <Tooltip label="View Attached Document / PDF" placement="top" hasArrow>
+                                                                <Button as="a" href={fileUrl} target="_blank" rel="noopener noreferrer" variant="ghost" colorScheme="red" size="sm">
+                                                                    <Icon as={FaFilePdf} w={4} h={4} />
+                                                                </Button>
+                                                            </Tooltip>
                                                         )}
-                                                        <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditEvent(event)}><Icon as={FaEdit} /></Button>
+                                                        <Button variant="ghost" colorScheme="blue" size="sm" onClick={() => handleEditEvent(event)}><Icon as={FaEdit} /></Button>
                                                         <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(event._id || event.id)}><Icon as={FaTrash} /></Button>
                                                     </Flex>
                                                 </Td>

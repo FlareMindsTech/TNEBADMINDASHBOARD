@@ -34,6 +34,7 @@ import {
   InputLeftElement,
   HStack,
   Tooltip,
+  Switch,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -54,12 +55,18 @@ import {
   FaAward,
   FaFileAlt,
   FaExternalLinkAlt,
+  FaBullhorn,
+  FaCalendarAlt,
 } from "react-icons/fa";
 import {
   getAllBoardProceedings,
   createBoardProceeding,
   updateBoardProceeding,
   deleteBoardProceeding,
+  getAllEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
   showErrorToast,
 } from "views/utils/axiosInstance";
 
@@ -77,7 +84,9 @@ function BoardProceedings() {
   const [currentView, setCurrentView] = useState("list"); // "list" | "add" | "edit"
   const [loading, setLoading] = useState(false);
   const [proceedings, setProceedings] = useState([]);
+  const [events, setEvents] = useState([]);
   const [editingProceeding, setEditingProceeding] = useState(null);
+  const [togglingEventId, setTogglingEventId] = useState(null);
 
   // Filter & Search states
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("ALL");
@@ -98,17 +107,35 @@ function BoardProceedings() {
     category: "BP's & Orders",
     date: new Date().toISOString().split("T")[0],
     document: null,
+    showInEvents: false,
   });
 
   useEffect(() => {
     fetchProceedings();
   }, []);
 
+  const getMatchedEvent = (item, eventsList = events) => {
+    if (!item || !Array.isArray(eventsList) || eventsList.length === 0) return null;
+    const pTitle = (item.title || "").trim().toLowerCase();
+    return eventsList.find((evt) => {
+      const eTitle = (evt.title || "").trim().toLowerCase();
+      if (eTitle && pTitle && eTitle === pTitle) return true;
+      if (item.docUrl && evt.pdfUrl && evt.pdfUrl === item.docUrl) return true;
+      return false;
+    });
+  };
+
   const fetchProceedings = async () => {
     setLoading(true);
     try {
-      const data = await getAllBoardProceedings();
-      const list = Array.isArray(data) ? data : [];
+      const [proceedingsData, eventsData] = await Promise.all([
+        getAllBoardProceedings(),
+        getAllEvents().catch(() => []),
+      ]);
+
+      const list = Array.isArray(proceedingsData) ? proceedingsData : [];
+      const eventsList = Array.isArray(eventsData) ? eventsData : [];
+      setEvents(eventsList);
 
       // Sort descending by date/createdAt
       const sorted = [...list].sort((a, b) => {
@@ -171,7 +198,9 @@ function BoardProceedings() {
     setFormData({
       title: "",
       category: "BP's & Orders",
+      date: new Date().toISOString().split("T")[0],
       document: null,
+      showInEvents: false,
     });
   };
 
@@ -182,6 +211,7 @@ function BoardProceedings() {
       category: "BP's & Orders",
       date: new Date().toISOString().split("T")[0],
       document: null,
+      showInEvents: false,
     });
     setCurrentView("add");
   };
@@ -194,21 +224,42 @@ function BoardProceedings() {
       ? new Date(item.createdAt).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
 
+    const matched = getMatchedEvent(item);
+
     setFormData({
       title: item.title || "",
       category: item.category || "BP's & Orders",
       date: itemDate,
       document: null, // Reset file input, keep existing unless replaced
+      showInEvents: !!matched || !!item.showInEvents,
     });
     setCurrentView("edit");
   };
 
   const handleInputChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "document") {
+    const { name, value, files, type, checked } = e.target;
+    if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+    } else if (name === "document") {
       setFormData((prev) => ({ ...prev, [name]: files[0] }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const getFileBlobFromUrl = async (url) => {
+    if (!url) return null;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      const cleanName = url.split("/").pop().split("?")[0] || "document.pdf";
+      return new File([blob], cleanName.endsWith(".pdf") ? cleanName : `${cleanName}.pdf`, {
+        type: blob.type || "application/pdf",
+      });
+    } catch (e) {
+      console.warn("Could not convert docUrl to file blob:", e);
+      return null;
     }
   };
 
@@ -235,10 +286,38 @@ function BoardProceedings() {
     if (formData.document) {
       data.append("document", formData.document);
     }
+    data.append("showInEvents", formData.showInEvents);
 
     try {
       if (currentView === "edit" && editingProceeding) {
-        await updateBoardProceeding(editingProceeding._id, data);
+        const updatedRes = await updateBoardProceeding(editingProceeding._id, data);
+        const updatedItem = updatedRes?.data || updatedRes;
+
+        // Synchronize with Events collection
+        const matched = getMatchedEvent(editingProceeding);
+        if (formData.showInEvents) {
+          const eventData = new FormData();
+          eventData.append("title", formData.title.trim());
+          eventData.append("date", formData.date || new Date().toISOString());
+          eventData.append("category", formData.category || "BP's & Orders");
+          const docUrlToUse = (typeof formData.document === 'string' ? formData.document : null) || updatedItem?.docUrl || editingProceeding?.docUrl;
+          if (formData.document instanceof File || formData.document instanceof Blob) {
+            eventData.append("pdf", formData.document);
+          }
+          if (docUrlToUse) {
+            eventData.append("pdfUrl", docUrlToUse);
+            eventData.append("docUrl", docUrlToUse);
+            eventData.append("link", docUrlToUse);
+          }
+          if (matched) {
+            await updateEvent(matched._id || matched.id, eventData).catch(() => {});
+          } else {
+            await createEvent(eventData).catch(() => {});
+          }
+        } else if (matched) {
+          await deleteEvent(matched._id || matched.id).catch(() => {});
+        }
+
         toast({
           title: "Success",
           description: "Board Proceeding updated successfully",
@@ -247,7 +326,27 @@ function BoardProceedings() {
           isClosable: true,
         });
       } else {
-        await createBoardProceeding(data);
+        const createdRes = await createBoardProceeding(data);
+        const createdItem = createdRes?.data || createdRes;
+
+        // If "Show in Events" is checked on create, create matching Event entry
+        if (formData.showInEvents) {
+          const eventData = new FormData();
+          eventData.append("title", formData.title.trim());
+          eventData.append("date", formData.date || new Date().toISOString());
+          eventData.append("category", formData.category || "BP's & Orders");
+          const itemDocUrl = (typeof formData.document === 'string' ? formData.document : null) || createdItem?.data?.docUrl || createdItem?.docUrl;
+          if (formData.document instanceof File || formData.document instanceof Blob) {
+            eventData.append("pdf", formData.document);
+          }
+          if (itemDocUrl) {
+            eventData.append("pdfUrl", itemDocUrl);
+            eventData.append("docUrl", itemDocUrl);
+            eventData.append("link", itemDocUrl);
+          }
+          await createEvent(eventData).catch(() => {});
+        }
+
         toast({
           title: "Success",
           description: "Board Proceeding created successfully",
@@ -267,6 +366,49 @@ function BoardProceedings() {
     }
   };
 
+  const handleToggleInEvents = async (item, e) => {
+    if (e) e.stopPropagation();
+    const matched = getMatchedEvent(item);
+    const willBeInEvents = !matched;
+    setTogglingEventId(item._id);
+
+    try {
+      if (willBeInEvents) {
+        const eventData = new FormData();
+        eventData.append("title", item.title);
+        eventData.append("date", item.date || new Date().toISOString());
+        eventData.append("category", item.category || "BP's & Orders");
+        if (item.docUrl) {
+          eventData.append("pdfUrl", item.docUrl);
+          eventData.append("docUrl", item.docUrl);
+          eventData.append("link", item.docUrl);
+        }
+        await createEvent(eventData);
+        toast({
+          title: "Added to Events",
+          description: `"${item.title}" with PDF is now live in Latest Events.`,
+          status: "success",
+          duration: 2500,
+          isClosable: true,
+        });
+      } else if (matched) {
+        await deleteEvent(matched._id || matched.id);
+        toast({
+          title: "Removed from Events",
+          description: `"${item.title}" removed from Events.`,
+          status: "info",
+          duration: 2500,
+          isClosable: true,
+        });
+      }
+      await fetchProceedings();
+    } catch (err) {
+      showErrorToast(toast, err, { title: "Failed to update event status" });
+    } finally {
+      setTogglingEventId(null);
+    }
+  };
+
   const openDeleteModal = (id) => {
     setDeleteTarget(id);
     setIsDeleteModalOpen(true);
@@ -282,6 +424,12 @@ function BoardProceedings() {
 
     setIsDeleting(true);
     try {
+      const targetItem = proceedings.find((p) => p._id === deleteTarget);
+      const matched = getMatchedEvent(targetItem);
+      if (matched) {
+        await deleteEvent(matched._id || matched.id).catch(() => {});
+      }
+
       await deleteBoardProceeding(deleteTarget);
       toast({
         title: "Deleted",
@@ -570,6 +718,49 @@ function BoardProceedings() {
                     </Flex>
                   )}
                 </FormControl>
+
+                {/* Professional Show in Events Checkbox / Switch Option */}
+                <Box
+                  p={4}
+                  borderRadius="xl"
+                  bg="blue.50"
+                  border="1.5px solid"
+                  borderColor="blue.200"
+                  transition="all 0.2s ease"
+                  _hover={{ borderColor: customColor, boxShadow: "0 2px 10px rgba(10, 61, 145, 0.08)" }}
+                >
+                  <Flex align="center" justify="space-between" wrap="nowrap" gap={3}>
+                    <Flex align="center" gap={3}>
+                      <Flex
+                        alignItems="center"
+                        justifyContent="center"
+                        borderRadius="10px"
+                        bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
+                        color="white"
+                        h="42px"
+                        w="42px"
+                        flexShrink={0}
+                        boxShadow="0 3px 8px rgba(10, 61, 145, 0.25)"
+                      >
+                        <Icon as={FaBullhorn} w="18px" h="18px" />
+                      </Flex>
+                      <Box>
+                        <Text fontWeight="700" fontSize="sm" color="gray.800" letterSpacing="0.2px">
+                          Show in Events / Latest Updates
+                        </Text>
+                        <Text fontSize="xs" color="gray.600" mt="1px">
+                          Feature this board proceeding in the homepage Latest News & Events ticker automatically.
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Switch
+                      size="lg"
+                      colorScheme="blue"
+                      isChecked={formData.showInEvents}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, showInEvents: e.target.checked }))}
+                    />
+                  </Flex>
+                </Box>
               </SimpleGrid>
 
               <Flex gap={3} mt={6}>
@@ -724,7 +915,10 @@ function BoardProceedings() {
                     <Th color="gray.500" w="140px">
                       Date
                     </Th>
-                    <Th color="gray.500" w="90px" textAlign="center">
+                    <Th color="gray.500" w="130px" textAlign="center">
+                      Show in Events
+                    </Th>
+                    <Th color="gray.500" w="80px" textAlign="center">
                       Doc
                     </Th>
                     <Th color="gray.500" w="110px" textAlign="center">
@@ -736,6 +930,8 @@ function BoardProceedings() {
                   {currentItems.map((item, index) => {
                     const isBP =
                       item.category && item.category.toLowerCase().includes("bp");
+                    const isInEvents = !!getMatchedEvent(item);
+                    const isToggling = togglingEventId === item._id;
                     return (
                       <Tr
                         key={item._id}
@@ -791,6 +987,48 @@ function BoardProceedings() {
                               : "N/A"}
                           </Text>
                         </Td>
+
+                        {/* Show in Events quick-toggle switch / badge */}
+                        <Td textAlign="center">
+                          <Tooltip
+                            label={
+                              isInEvents
+                                ? "Visible in Homepage Events. Click to remove."
+                                : "Not in Events. Click to add to Events."
+                            }
+                            placement="top"
+                            hasArrow
+                          >
+                            <Box
+                              display="inline-flex"
+                              alignItems="center"
+                              gap={2}
+                              cursor="pointer"
+                              onClick={(e) => handleToggleInEvents(item, e)}
+                            >
+                              <Switch
+                                size="sm"
+                                colorScheme="blue"
+                                isChecked={isInEvents}
+                                isDisabled={isToggling}
+                                onChange={() => {}}
+                              />
+                              <Badge
+                                colorScheme={isInEvents ? "green" : "gray"}
+                                variant="subtle"
+                                fontSize="10px"
+                                px={2}
+                                py={0.5}
+                                borderRadius="full"
+                                textTransform="none"
+                                fontWeight="600"
+                              >
+                                {isInEvents ? "Active" : "Off"}
+                              </Badge>
+                            </Box>
+                          </Tooltip>
+                        </Td>
+
                         <Td textAlign="center">
                           {item.docUrl ? (
                             <Tooltip label="View Attached Document" placement="top">

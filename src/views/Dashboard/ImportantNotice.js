@@ -31,6 +31,9 @@ import {
     ModalFooter,
     ModalBody,
     ModalCloseButton,
+    Switch,
+    Tooltip,
+    HStack,
 } from "@chakra-ui/react";
 import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
@@ -44,6 +47,7 @@ import {
     FaFilePdf,
     FaFileAlt,
     FaBullhorn,
+    FaCalendarAlt,
     FaChevronLeft,
     FaChevronRight,
     FaExclamationTriangle
@@ -53,6 +57,10 @@ import {
     createNotice,
     updateNotice,
     deleteNotice,
+    getAllEvents,
+    createEvent,
+    updateEvent,
+    deleteEvent,
     showErrorToast
 } from "views/utils/axiosInstance";
 
@@ -65,7 +73,9 @@ function ImportantNotice() {
     const [currentView, setCurrentView] = useState("list");
     const [loading, setLoading] = useState(false);
     const [notices, setNotices] = useState([]);
+    const [events, setEvents] = useState([]);
     const [editingNotice, setEditingNotice] = useState(null);
+    const [togglingEventId, setTogglingEventId] = useState(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -98,18 +108,36 @@ function ImportantNotice() {
         Notice_title: "",
         Type: "",
         date: "",
-        document: null
+        document: null,
+        showInEvents: false
     });
 
     useEffect(() => {
         fetchNotices();
     }, []);
 
+    const getMatchedEvent = (notice, eventsList = events) => {
+        if (!notice || !Array.isArray(eventsList) || eventsList.length === 0) return null;
+        const nTitle = (notice.Notice_title || "").trim().toLowerCase();
+        return eventsList.find((evt) => {
+            const eTitle = (evt.title || "").trim().toLowerCase();
+            if (eTitle && nTitle && eTitle === nTitle) return true;
+            if (notice.docUrl && evt.pdfUrl && evt.pdfUrl === notice.docUrl) return true;
+            return false;
+        });
+    };
+
     const fetchNotices = async () => {
         setLoading(true);
         try {
-            const data = await getAllNotices();
-            let noticesList = Array.isArray(data) ? data : [];
+            const [noticesData, eventsData] = await Promise.all([
+                getAllNotices(),
+                getAllEvents().catch(() => [])
+            ]);
+
+            const noticesList = Array.isArray(noticesData) ? noticesData : [];
+            const eventsList = Array.isArray(eventsData) ? eventsData : [];
+            setEvents(eventsList);
 
             // Sort descending (newest notices first)
             const sortedNotices = [...noticesList].sort((a, b) => {
@@ -118,7 +146,7 @@ function ImportantNotice() {
                 if (dateA && dateB && dateA !== dateB && !isNaN(dateA) && !isNaN(dateB)) {
                     return dateB - dateA;
                 }
-                return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
+                return String(b._id || b.id || "").localeCompare(String(a._id || a.id || ""));
             });
 
             setNotices(sortedNotices);
@@ -132,31 +160,41 @@ function ImportantNotice() {
     const handleBackToList = () => {
         setCurrentView("list");
         setEditingNotice(null);
-        setFormData({ Notice_title: "", Type: "", date: "", document: null });
+        setFormData({ Notice_title: "", Type: "", date: "", document: null, showInEvents: false });
     };
 
     const handleAddNotice = () => {
         setEditingNotice(null);
-        setFormData({ Notice_title: "", Type: "", date: new Date().toISOString().split('T')[0], document: null });
+        setFormData({
+            Notice_title: "",
+            Type: "",
+            date: new Date().toISOString().split("T")[0],
+            document: null,
+            showInEvents: false
+        });
         setCurrentView("add");
     };
 
     const handleEditNotice = (notice) => {
         setEditingNotice(notice);
+        const matched = getMatchedEvent(notice);
         setFormData({
             Notice_title: notice.Notice_title || "",
             Type: notice.Type || "",
-            date: notice.date ? notice.date.split('T')[0] : "",
-            document: null // Cannot pre-fill file input
+            date: notice.date ? notice.date.split("T")[0] : "",
+            document: null, // Cannot pre-fill file input
+            showInEvents: !!matched || !!notice.showInEvents
         });
         setCurrentView("edit");
     };
 
     const handleInputChange = (e) => {
-        const { name, value, files } = e.target;
-        if (name === 'document') {
+        const { name, value, files, type, checked } = e.target;
+        if (type === "checkbox") {
+            setFormData(prev => ({ ...prev, [name]: checked }));
+        } else if (name === "document") {
             setFormData(prev => ({ ...prev, [name]: files[0] }));
-        } else if (name === 'Type') {
+        } else if (name === "Type") {
             if (value.length > 120) {
                 toast({
                     title: "Character Limit Reached",
@@ -174,6 +212,22 @@ function ImportantNotice() {
         }
     };
 
+    const getFileBlobFromUrl = async (url) => {
+        if (!url) return null;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            const blob = await response.blob();
+            const cleanName = url.split("/").pop().split("?")[0] || "document.pdf";
+            return new File([blob], cleanName.endsWith(".pdf") ? cleanName : `${cleanName}.pdf`, {
+                type: blob.type || "application/pdf"
+            });
+        } catch (e) {
+            console.warn("Could not convert docUrl to file blob:", e);
+            return null;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -187,13 +241,59 @@ function ImportantNotice() {
         if (formData.document) {
             data.append("document", formData.document);
         }
+        data.append("showInEvents", formData.showInEvents);
 
         try {
             if (currentView === "edit" && editingNotice) {
-                await updateNotice(editingNotice._id, data);
+                const updatedNotice = await updateNotice(editingNotice._id, data);
+
+                // Synchronize with Events collection
+                const matched = getMatchedEvent(editingNotice);
+                if (formData.showInEvents) {
+                    const eventData = new FormData();
+                    eventData.append("title", formData.Notice_title);
+                    eventData.append("date", formData.date || new Date().toISOString());
+                    eventData.append("category", formData.Type || "Important Notice");
+                    const docUrlToUse = (typeof formData.document === 'string' ? formData.document : null) || updatedNotice?.docUrl || editingNotice?.docUrl;
+                    if (formData.document instanceof File || formData.document instanceof Blob) {
+                        eventData.append("pdf", formData.document);
+                    }
+                    if (docUrlToUse) {
+                        eventData.append("pdfUrl", docUrlToUse);
+                        eventData.append("docUrl", docUrlToUse);
+                        eventData.append("link", docUrlToUse);
+                    }
+                    if (matched) {
+                        await updateEvent(matched._id || matched.id, eventData).catch(() => {});
+                    } else {
+                        await createEvent(eventData).catch(() => {});
+                    }
+                } else if (matched) {
+                    await deleteEvent(matched._id || matched.id).catch(() => {});
+                }
+
                 toast({ title: "Notice updated successfully", status: "success", duration: 3000 });
             } else {
-                await createNotice(data);
+                const createdNotice = await createNotice(data);
+
+                // If "Show in Events" is checked on create, create matching Event entry
+                if (formData.showInEvents) {
+                    const eventData = new FormData();
+                    eventData.append("title", formData.Notice_title);
+                    eventData.append("date", formData.date || new Date().toISOString());
+                    eventData.append("category", formData.Type || "Important Notice");
+                    const docUrlToUse = (typeof formData.document === 'string' ? formData.document : null) || createdNotice?.docUrl;
+                    if (formData.document instanceof File || formData.document instanceof Blob) {
+                        eventData.append("pdf", formData.document);
+                    }
+                    if (docUrlToUse) {
+                        eventData.append("pdfUrl", docUrlToUse);
+                        eventData.append("docUrl", docUrlToUse);
+                        eventData.append("link", docUrlToUse);
+                    }
+                    await createEvent(eventData).catch(() => {});
+                }
+
                 toast({ title: "Notice created successfully", status: "success", duration: 3000 });
             }
             fetchNotices();
@@ -202,6 +302,49 @@ function ImportantNotice() {
             showErrorToast(toast, error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleInEvents = async (notice, e) => {
+        if (e) e.stopPropagation();
+        const matched = getMatchedEvent(notice);
+        const willBeInEvents = !matched;
+        setTogglingEventId(notice._id);
+
+        try {
+            if (willBeInEvents) {
+                const eventData = new FormData();
+                eventData.append("title", notice.Notice_title);
+                eventData.append("date", notice.date || new Date().toISOString());
+                eventData.append("category", notice.Type || "Important Notice");
+                if (notice.docUrl) {
+                    eventData.append("pdfUrl", notice.docUrl);
+                    eventData.append("docUrl", notice.docUrl);
+                    eventData.append("link", notice.docUrl);
+                }
+                await createEvent(eventData);
+                toast({
+                    title: "Added to Events",
+                    description: `"${notice.Notice_title}" with PDF is now live in Latest Events.`,
+                    status: "success",
+                    duration: 2500,
+                    isClosable: true
+                });
+            } else if (matched) {
+                await deleteEvent(matched._id || matched.id);
+                toast({
+                    title: "Removed from Events",
+                    description: `"${notice.Notice_title}" removed from Events.`,
+                    status: "info",
+                    duration: 2500,
+                    isClosable: true
+                });
+            }
+            await fetchNotices();
+        } catch (err) {
+            showErrorToast(toast, err, { title: "Failed to update event status" });
+        } finally {
+            setTogglingEventId(null);
         }
     };
 
@@ -220,6 +363,12 @@ function ImportantNotice() {
 
         setIsDeleting(true);
         try {
+            const targetNotice = notices.find(n => n._id === deleteTarget);
+            const matched = getMatchedEvent(targetNotice);
+            if (matched) {
+                await deleteEvent(matched._id || matched.id).catch(() => {});
+            }
+
             await deleteNotice(deleteTarget);
             toast({ title: "Notice deleted successfully", status: "success", duration: 2000 });
             fetchNotices();
@@ -272,8 +421,8 @@ function ImportantNotice() {
                                         borderColor={(formData.Type || "").length >= 120 ? "red.400" : `${customColor}50`}
                                         _hover={{ borderColor: (formData.Type || "").length >= 120 ? "red.500" : customColor }}
                                         _focus={{
-                                            borderColor: (formData.Type || "").length >= 120 ? "red.500" : customColor,
-                                            boxShadow: (formData.Type || "").length >= 120 ? "0 0 0 1px red" : `0 0 0 1px ${customColor}`
+                                             borderColor: (formData.Type || "").length >= 120 ? "red.500" : customColor,
+                                             boxShadow: (formData.Type || "").length >= 120 ? "0 0 0 1px red" : `0 0 0 1px ${customColor}`
                                         }}
                                     />
                                     {(formData.Type || "").length >= 120 ? (
@@ -299,9 +448,52 @@ function ImportantNotice() {
                                         <Text fontSize="xs" mt={2} color="gray.500">Current file exists. Upload new to replace.</Text>
                                     )}
                                 </FormControl>
+
+                                {/* Professional Show in Events Checkbox / Switch Option */}
+                                <Box
+                                    p={4}
+                                    borderRadius="xl"
+                                    bg="blue.50"
+                                    border="1.5px solid"
+                                    borderColor="blue.200"
+                                    transition="all 0.2s ease"
+                                    _hover={{ borderColor: customColor, boxShadow: "0 2px 10px rgba(10, 61, 145, 0.08)" }}
+                                >
+                                    <Flex align="center" justify="space-between" wrap="nowrap" gap={3}>
+                                        <Flex align="center" gap={3}>
+                                            <Flex
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                borderRadius="10px"
+                                                bg="linear-gradient(135deg, #0A3D91 0%, #1557bf 100%)"
+                                                color="white"
+                                                h="42px"
+                                                w="42px"
+                                                flexShrink={0}
+                                                boxShadow="0 3px 8px rgba(10, 61, 145, 0.25)"
+                                            >
+                                                <Icon as={FaBullhorn} w="18px" h="18px" />
+                                            </Flex>
+                                            <Box>
+                                                <Text fontWeight="700" fontSize="sm" color="gray.800" letterSpacing="0.2px">
+                                                    Show in Events / Latest Updates
+                                                </Text>
+                                                <Text fontSize="xs" color="gray.600" mt="1px">
+                                                    Feature this notice in the homepage Latest News & Events ticker automatically.
+                                                </Text>
+                                            </Box>
+                                        </Flex>
+                                        <Switch
+                                            size="lg"
+                                            colorScheme="blue"
+                                            isChecked={formData.showInEvents}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, showInEvents: e.target.checked }))}
+                                        />
+                                    </Flex>
+                                </Box>
                             </SimpleGrid>
                             <Button type="submit" isLoading={loading} bg={customColor} color="white" _hover={{ bg: customHoverColor }} mt={4} width="100%">
-                                {currentView === "add" ? "Create" : "Update"}
+                                {currentView === "add" ? "Create Notice" : "Update Notice"}
                             </Button>
                         </Box>
                     </CardBody>
@@ -370,62 +562,95 @@ function ImportantNotice() {
                         <Flex justify="center" align="center" flex="1" p={8}><Spinner color={customColor} /></Flex>
                     ) : (
                         <Box overflowY="auto" overflowX="auto" flex="1" px={{ base: 2, md: 4 }}>
-                            <Table variant="simple" color={textColor} minW={{ base: "550px", md: "100%" }}>
+                            <Table variant="simple" color={textColor} minW={{ base: "650px", md: "100%" }}>
                                 <Thead>
                                     <Tr my=".8rem" pl="0px" color="gray.400">
                                         <Th color="gray.400">S.No</Th>
                                         <Th color="gray.400">Title</Th>
                                         <Th color="gray.400">Type</Th>
                                         <Th color="gray.400">Notice Date</Th>
+                                        <Th color="gray.400" textAlign="center">Show in Events</Th>
                                         <Th color="gray.400" textAlign="center">Actions</Th>
                                     </Tr>
                                 </Thead>
                                 <Tbody>
-                                    {currentNotices.map((notice, index) => (
-                                        <Tr key={notice._id}>
-                                            <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
-                                            <Td>
-                                                {notice.docUrl ? (
-                                                    <Text
-                                                        as="a"
-                                                        href={notice.docUrl}
-                                                        target="_blank"
-                                                        fontSize="sm"
-                                                        color={customColor}
-                                                        fontWeight="bold"
-                                                        cursor="pointer"
-                                                        _hover={{ textDecoration: "underline", color: customHoverColor }}
-                                                    >
-                                                        {notice.Notice_title}
-                                                    </Text>
-                                                ) : (
-                                                    <Text fontSize="sm" color={textColor} fontWeight="bold">
-                                                        {notice.Notice_title}
-                                                    </Text>
-                                                )}
-                                            </Td>
-                                            <Td>
-                                                <Badge colorScheme="purple">
-                                                    {notice.Type ? notice.Type.toUpperCase() : "GENERAL"}
-                                                </Badge>
-                                            </Td>
-                                            <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{notice.date ? notice.date.split('T')[0].split('-').reverse().join('-') : "N/A"}</Text></Td>
-                                            <Td textAlign="center">
-                                                <Flex justify="center">
-                                                    {notice.docUrl && (
-                                                        <Button as="a" href={notice.docUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
-                                                            <Icon as={FaFilePdf} />
-                                                        </Button>
+                                    {currentNotices.map((notice, index) => {
+                                        const isInEvents = !!getMatchedEvent(notice);
+                                        const isToggling = togglingEventId === notice._id;
+                                        return (
+                                            <Tr key={notice._id} _hover={{ bg: "gray.50" }} transition="background-color 0.15s">
+                                                <Td><Text fontSize="sm" color={textColor} fontWeight="bold">{indexOfFirstItem + index + 1}</Text></Td>
+                                                <Td>
+                                                    {notice.docUrl ? (
+                                                        <Text
+                                                            as="a"
+                                                            href={notice.docUrl}
+                                                            target="_blank"
+                                                            fontSize="sm"
+                                                            color={customColor}
+                                                            fontWeight="bold"
+                                                            cursor="pointer"
+                                                            _hover={{ textDecoration: "underline", color: customHoverColor }}
+                                                        >
+                                                            {notice.Notice_title}
+                                                        </Text>
+                                                    ) : (
+                                                        <Text fontSize="sm" color={textColor} fontWeight="bold">
+                                                            {notice.Notice_title}
+                                                        </Text>
                                                     )}
-                                                    <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditNotice(notice)}><Icon as={FaEdit} /></Button>
-                                                    <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(notice._id)}><Icon as={FaTrash} /></Button>
-                                                </Flex>
-                                            </Td>
-                                        </Tr>
-                                    ))}
+                                                </Td>
+                                                <Td>
+                                                    <Badge colorScheme="purple">
+                                                        {notice.Type ? notice.Type.toUpperCase() : "GENERAL"}
+                                                    </Badge>
+                                                </Td>
+                                                <Td><Text fontSize="sm" color={textColor} whiteSpace="nowrap">{notice.date ? notice.date.split("T")[0].split("-").reverse().join("-") : "N/A"}</Text></Td>
+                                                
+                                                {/* Show in Events quick-toggle switch / badge */}
+                                                <Td textAlign="center">
+                                                    <Tooltip label={isInEvents ? "Visible in Homepage Events. Click to remove." : "Not in Events. Click to add to Events."} placement="top" hasArrow>
+                                                        <Box display="inline-flex" alignItems="center" gap={2} cursor="pointer" onClick={(e) => handleToggleInEvents(notice, e)}>
+                                                            <Switch
+                                                                size="sm"
+                                                                colorScheme="blue"
+                                                                isChecked={isInEvents}
+                                                                isDisabled={isToggling}
+                                                                onChange={() => {}}
+                                                            />
+                                                            <Badge
+                                                                colorScheme={isInEvents ? "green" : "gray"}
+                                                                variant="subtle"
+                                                                fontSize="10px"
+                                                                px={2}
+                                                                py={0.5}
+                                                                borderRadius="full"
+                                                                textTransform="none"
+                                                                fontWeight="600"
+                                                            >
+                                                                {isInEvents ? "Active" : "Off"}
+                                                            </Badge>
+                                                        </Box>
+                                                    </Tooltip>
+                                                </Td>
+
+                                                <Td textAlign="center">
+                                                    <Flex justify="center">
+                                                        {notice.docUrl && (
+                                                            <Button as="a" href={notice.docUrl} target="_blank" variant="ghost" colorScheme="orange" size="sm" mr={1}>
+                                                                <Icon as={FaFilePdf} />
+                                                            </Button>
+                                                        )}
+                                                        <Button variant="ghost" colorScheme="blue" size="sm" mr={1} onClick={() => handleEditNotice(notice)}><Icon as={FaEdit} /></Button>
+                                                        <Button variant="ghost" colorScheme="red" size="sm" onClick={() => openDeleteModal(notice._id)}><Icon as={FaTrash} /></Button>
+                                                    </Flex>
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })}
                                     {notices.length === 0 && (
                                         <Tr>
-                                            <Td colSpan={5} textAlign="center" py={4}>No notices found.</Td>
+                                            <Td colSpan={6} textAlign="center" py={4}>No notices found.</Td>
                                         </Tr>
                                     )}
                                 </Tbody>
