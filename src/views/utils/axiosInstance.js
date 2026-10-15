@@ -875,3 +875,40 @@ export const updateApplicationStatus = async (id, status) => {
     body: { status }
   });
 };
+
+// ----- Minnagam Contribution APIs -----
+const userProfileCache = new Map();
+export const getUserProfile = async (userId) => {
+  if (!userId) return null;
+  if (userProfileCache.has(userId)) {
+    return userProfileCache.get(userId);
+  }
+  try {
+    const profile = await apiRequest(`/users/${userId}`, { method: "GET" });
+    if (profile) {
+      userProfileCache.set(userId, profile);
+    }
+    return profile;
+  } catch (error) {
+    console.warn("Could not fetch user profile:", error);
+    return null;
+  }
+};
+
+export const getAllMinnagams = async () => {
+  return apiRequest("/minnagam", { method: "GET" });
+};
+
+export const updateMinnagamStatus = async (id, status) => {
+  return apiRequest(`/minnagam/${id}/status`, {
+    method: "PATCH",
+    body: { status },
+  });
+};
+
+export const deleteMinnagam = async (id) => {
+  return apiRequest(`/minnagam/${id}`, {
+    method: "DELETE",
+  });
+};
+

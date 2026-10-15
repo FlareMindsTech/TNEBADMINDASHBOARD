@@ -28,6 +28,7 @@ import Committees from "views/Dashboard/Committees.js";
 import ActRegulations from "views/Dashboard/ActRegulations.js";
 import DistributionInstructions from "views/Dashboard/DistributionInstructions.js";
 import Technical from "views/Dashboard/Technical.js";
+import Minnagam from "views/Dashboard/Minnagam.js";
 import {
   FaFileAlt,
   FaBullhorn,
@@ -39,6 +40,7 @@ import {
   FaSlidersH,
   FaQuestionCircle,
   FaBook,
+  FaAward,
 } from "react-icons/fa";
 
 const ICON_COLOR = "#0A3D91";
@@ -67,6 +69,13 @@ var dashRoutes = [
     name: "Enrollment Forms",
     icon: <DocumentIcon color={ICON_COLOR} />,
     element: <Enrollments />,
+    layout: "/admin",
+  },
+  {
+    path: "/minnagam",
+    name: "Minnagam",
+    icon: <FaAward color={ICON_COLOR} />,
+    element: <Minnagam />,
     layout: "/admin",
   },
   {
