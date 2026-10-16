@@ -912,3 +912,42 @@ export const deleteMinnagam = async (id) => {
   });
 };
 
+// ----- Grievance Redressal APIs -----
+export const getAllGrievances = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.search) query.append("search", params.search);
+  if (params.status && params.status !== "ALL") query.append("status", params.status);
+  if (params.isVerified !== undefined && params.isVerified !== "ALL") {
+    query.append("isVerified", params.isVerified);
+  }
+  if (params.page) query.append("page", params.page);
+  if (params.limit) query.append("limit", params.limit);
+
+  const queryString = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest(`/grievances${queryString}`, { method: "GET" });
+};
+
+export const getGrievanceStats = async () => {
+  return apiRequest("/grievances/stats", { method: "GET" });
+};
+
+export const verifyGrievance = async (id, payload = {}) => {
+  return apiRequest(`/grievances/${id}/verify`, {
+    method: "PATCH",
+    body: payload,
+  });
+};
+
+export const updateGrievanceStatus = async (id, status, remarks = "") => {
+  return apiRequest(`/grievances/${id}/status`, {
+    method: "PATCH",
+    body: { status, remarks },
+  });
+};
+
+export const deleteGrievance = async (id) => {
+  return apiRequest(`/grievances/${id}`, {
+    method: "DELETE",
+  });
+};
+

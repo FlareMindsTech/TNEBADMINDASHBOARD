@@ -29,6 +29,7 @@ import ActRegulations from "views/Dashboard/ActRegulations.js";
 import DistributionInstructions from "views/Dashboard/DistributionInstructions.js";
 import Technical from "views/Dashboard/Technical.js";
 import Minnagam from "views/Dashboard/Minnagam.js";
+import Grievances from "views/Dashboard/Grievances.js";
 import {
   FaFileAlt,
   FaBullhorn,
@@ -76,6 +77,13 @@ var dashRoutes = [
     name: "Minnagam",
     icon: <FaAward color={ICON_COLOR} />,
     element: <Minnagam />,
+    layout: "/admin",
+  },
+  {
+    path: "/grievances",
+    name: "Grievances",
+    icon: <FaClipboardList color={ICON_COLOR} />,
+    element: <Grievances />,
     layout: "/admin",
   },
   {
